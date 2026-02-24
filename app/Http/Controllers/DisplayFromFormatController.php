@@ -12,6 +12,6 @@ class DisplayFromFormatController extends Controller
         user()->display_from_format = DisplayFromFormat::from($request->format);
         user()->save();
 
-        return back()->with(['flash' => 'Default Alias Format Updated Successfully']);
+        return back()->with(['flash' => 'Display From Format Updated Successfully']);
     }
 }

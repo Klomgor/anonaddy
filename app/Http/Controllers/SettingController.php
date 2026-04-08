@@ -31,6 +31,7 @@ class SettingController extends Controller
             'emailSubject' => user()->email_subject ?? '',
             'bannerLocation' => user()->banner_location,
             'spamWarningBehaviour' => user()->spam_warning_behaviour,
+            'listUnsubscribeBehaviour' => user()->list_unsubscribe_behaviour->value,
             'domainOptions' => user()->domainOptions(),
         ]);
     }

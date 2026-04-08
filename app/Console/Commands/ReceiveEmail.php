@@ -22,6 +22,7 @@ use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use ParagonIE\ConstantTime\Base32;
@@ -568,7 +569,7 @@ class ReceiveEmail extends Command
 
     protected function checkRateLimit()
     {
-        \Illuminate\Support\Facades\Redis::throttle("user:{$this->user->id}:limit:emails")
+        Redis::throttle("user:{$this->user->id}:limit:emails")
             ->allow(config('anonaddy.limit'))
             ->every(3600)
             ->then(
@@ -702,7 +703,7 @@ class ReceiveEmail extends Command
         $parts = explode('_', $localPart);
 
         if (count($parts) !== 3) {
-            Log::channel('single')->info('VERP invalid email: '.$verp);
+            Log::info('VERP invalid email: '.$verp);
 
             return;
         }
@@ -712,7 +713,7 @@ class ReceiveEmail extends Command
 
             $signature = Base32::decodeNoPadding($parts[2]);
         } catch (\Exception $e) {
-            Log::channel('single')->info('VERP base32 decode failure: '.$verp.' '.$e->getMessage());
+            Log::info('VERP base32 decode failure: '.$verp.' '.$e->getMessage());
 
             return;
         }
@@ -720,7 +721,7 @@ class ReceiveEmail extends Command
         $expectedSignature = substr(hash_hmac('sha3-224', $id, config('anonaddy.secret')), 0, 8);
 
         if ($signature !== $expectedSignature) {
-            Log::channel('single')->info('VERP invalid signature: '.$verp);
+            Log::info('VERP invalid signature: '.$verp);
 
             return;
         }

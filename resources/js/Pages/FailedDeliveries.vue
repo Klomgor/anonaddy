@@ -47,18 +47,8 @@
           <span
             class="tooltip cursor-pointer outline-none text-sm font-medium text-grey-700 dark:text-grey-200"
             data-tippy-content="Click to copy"
-            @click="
-              clipboard(
-                rows[props.row.originalIndex].recipient
-                  ? rows[props.row.originalIndex].recipient.email
-                  : rows[props.row.originalIndex].destination,
-              )
-            "
-            >{{
-              props.row.recipient
-                ? props.row.recipient.email
-                : rows[props.row.originalIndex].destination
-            }}</span
+            @click="clipboard(rows[props.row.originalIndex].destination)"
+            >{{ rows[props.row.originalIndex].destination }}</span
           >
         </span>
         <span v-else-if="props.column.field == 'alias'">
@@ -85,6 +75,16 @@
             @click="clipboard(rows[props.row.originalIndex].sender)"
             >{{ props.row.sender }}</span
           >
+          <span
+            v-if="
+              rows[props.row.originalIndex].sender && rows[props.row.originalIndex].sender !== '<>'
+            "
+            class="block text-grey-400 text-sm py-1 dark:text-grey-300"
+          >
+            <button @click="openBlockSenderModal(rows[props.row.originalIndex])">
+              Add to blocklist
+            </button>
+          </span>
         </span>
         <span
           v-else-if="props.column.field == 'remote_mta'"
@@ -270,11 +270,53 @@
         </div>
       </template>
     </Modal>
+
+    <Modal :open="blockSenderModalOpen" @close="closeBlockSenderModal">
+      <template v-slot:title> Add sender to blocklist </template>
+      <template v-slot:content>
+        <p class="mt-4 text-grey-700 dark:text-grey-200">
+          Choose whether to block just this sender's email address or their entire domain.
+        </p>
+        <p class="mt-4 text-sm text-grey-500 dark:text-grey-300 break-all">
+          Sender email: <b class="text-grey-700 dark:text-grey-200">{{ senderToBlock.sender }}</b>
+        </p>
+        <p v-if="senderDomain" class="mt-1 text-sm text-grey-500 dark:text-grey-300 break-all">
+          Sender domain: <b class="text-grey-700 dark:text-grey-200">{{ senderDomain }}</b>
+        </p>
+        <div class="mt-6 flex flex-col space-y-3">
+          <button
+            type="button"
+            @click="blockSender('email')"
+            class="w-full px-4 py-3 text-cyan-900 font-semibold bg-cyan-400 hover:bg-cyan-300 border border-transparent rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:cursor-not-allowed"
+            :disabled="blockSenderLoading"
+          >
+            Block email
+            <loader v-if="blockSenderLoading && blockSenderType === 'email'" />
+          </button>
+          <button
+            v-if="senderDomain"
+            type="button"
+            @click="blockSender('domain')"
+            class="w-full px-4 py-3 text-cyan-900 font-semibold bg-cyan-400 hover:bg-cyan-300 border border-transparent rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:cursor-not-allowed"
+            :disabled="blockSenderLoading"
+          >
+            Block domain
+            <loader v-if="blockSenderLoading && blockSenderType === 'domain'" />
+          </button>
+          <button
+            @click="closeBlockSenderModal"
+            class="w-full px-4 py-3 text-grey-800 font-semibold bg-white hover:bg-grey-50 dark:text-grey-100 dark:hover:bg-grey-700 dark:bg-grey-600 dark:border-grey-700 border border-grey-100 rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+          >
+            Cancel
+          </button>
+        </div>
+      </template>
+    </Modal>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { Head, Link } from '@inertiajs/vue3'
 import Modal from '../Components/Modal.vue'
 import { roundArrow } from 'tippy.js'
@@ -298,12 +340,21 @@ const props = defineProps({
   },
 })
 
+onMounted(() => {
+  addTooltips()
+})
+
 const rows = ref(props.initialRows)
 
 const resendFailedDeliveryLoading = ref(false)
 const resendFailedDeliveryModalOpen = ref(false)
 const deleteFailedDeliveryLoading = ref(false)
 const deleteFailedDeliveryModalOpen = ref(false)
+const blockSenderModalOpen = ref(false)
+const blockSenderLoading = ref(false)
+const blockSenderType = ref(null)
+const senderToBlock = ref({})
+const senderDomain = ref(null)
 const moreInfoOpen = ref(false)
 const failedDeliveryToResend = ref({})
 const failedDeliveryRecipientsToResend = ref([])
@@ -417,6 +468,48 @@ const openDeleteModal = id => {
 const closeDeleteModal = () => {
   deleteFailedDeliveryModalOpen.value = false
   failedDeliveryIdToDelete.value = null
+}
+
+const openBlockSenderModal = failedDelivery => {
+  senderToBlock.value = failedDelivery
+  const parts = failedDelivery.sender.split('@')
+  senderDomain.value = parts.length === 2 ? parts[1] : null
+  blockSenderModalOpen.value = true
+}
+
+const closeBlockSenderModal = () => {
+  blockSenderModalOpen.value = false
+  _.delay(() => {
+    senderToBlock.value = {}
+    senderDomain.value = null
+    blockSenderType.value = null
+  }, 300)
+}
+
+const blockSender = type => {
+  blockSenderLoading.value = true
+  blockSenderType.value = type
+
+  const value = type === 'domain' ? senderDomain.value : senderToBlock.value.sender
+
+  axios
+    .post('/api/v1/blocklist', { type, value }, { withCredentials: true })
+    .then(() => {
+      successMessage(`Sender ${type === 'domain' ? 'domain' : 'email'} added to blocklist`)
+      closeBlockSenderModal()
+    })
+    .catch(error => {
+      if (error.response?.status === 422 && error.response?.data?.errors?.value) {
+        errorMessage(error.response.data.errors.value[0])
+      } else if (error.response?.data?.message) {
+        errorMessage(error.response.data.message)
+      } else {
+        errorMessage()
+      }
+    })
+    .finally(() => {
+      blockSenderLoading.value = false
+    })
 }
 
 const addTooltips = () => {

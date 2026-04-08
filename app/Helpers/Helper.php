@@ -52,7 +52,7 @@ function stripEmailExtension(string $email): string
 /**
  * Create a new user instance
  *
- * @return \App\Models\User
+ * @return User
  */
 function createUser(string $username, string $email, ?string $password = null, bool $emailVerified = false, ?string $externalId = null)
 {

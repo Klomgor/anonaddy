@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\AllowedRecipientController;
 use App\Http\Controllers\Api\ApiTokenDetailController;
 use App\Http\Controllers\Api\AppVersionController;
 use App\Http\Controllers\Api\AttachedRecipientOnlyController;
+use App\Http\Controllers\Api\BlocklistController;
 use App\Http\Controllers\Api\CatchAllDomainController;
 use App\Http\Controllers\Api\CatchAllUsernameController;
 use App\Http\Controllers\Api\ChartDataController;
@@ -34,6 +35,7 @@ use App\Http\Controllers\Api\RuleController;
 use App\Http\Controllers\Api\UsernameController;
 use App\Http\Controllers\Api\UsernameDefaultRecipientController;
 use App\Http\Controllers\Auth\ApiAuthenticationController;
+use App\Http\Controllers\BlocklistCheckController;
 use App\Http\Controllers\RecipientVerificationController;
 use Illuminate\Support\Facades\Route;
 
@@ -47,6 +49,11 @@ use Illuminate\Support\Facades\Route;
 | is assigned the "api" middleware group. Enjoy building your API!
 |
 */
+
+// Bblocklist check for Rspamd (allowed IPs + optional secret only)
+Route::get('blocklist-check', [BlocklistCheckController::class, 'check'])
+    ->middleware('blocklist.api')
+    ->name('blocklist.check');
 
 // API auth routes for mobile apps and browser extension
 Route::controller(ApiAuthenticationController::class)->prefix('auth')->group(function () {
@@ -201,6 +208,14 @@ Route::group([
 
     Route::get('/failed-deliveries/{id}/download', [DownloadableFailedDeliveryController::class, 'index']);
     Route::post('/failed-deliveries/{id}/resend', [ResendableFailedDeliveryController::class, 'index']);
+
+    Route::controller(BlocklistController::class)->group(function () {
+        Route::get('/blocklist', 'index');
+        Route::post('/blocklist', 'store');
+        Route::post('/blocklist/store/bulk', 'storeBulk');
+        Route::post('/blocklist/delete/bulk', 'destroyBulk');
+        Route::delete('/blocklist/{id}', 'destroy');
+    });
 
     Route::get('/domain-options', [DomainOptionController::class, 'index']);
 

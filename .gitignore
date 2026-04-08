@@ -26,3 +26,5 @@ yarn-error.log
 .phpunit.result.cache
 ray.php
 .husky/pre-commit
+Envoy.blade.php
+scripts/envoy-sync-staged.sh

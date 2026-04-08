@@ -4,6 +4,7 @@ namespace App\Mail;
 
 use App\CustomMailDriver\Mime\Part\CustomDataPart;
 use App\Enums\DisplayFromFormat;
+use App\Enums\ListUnsubscribeBehaviour;
 use App\Models\Alias;
 use App\Models\EmailData;
 use App\Models\Recipient;
@@ -58,6 +59,14 @@ class ForwardEmail extends Mailable implements ShouldBeEncrypted, ShouldQueue
     protected $emailInlineAttachments;
 
     protected $deactivateUrl;
+
+    protected $deactivatePostUrl;
+
+    protected $deletePostUrl;
+
+    protected $blockEmailPostUrl;
+
+    protected $blockDomainPostUrl;
 
     protected $bannerLocationText;
 
@@ -194,6 +203,19 @@ class ForwardEmail extends Mailable implements ShouldBeEncrypted, ShouldQueue
         $this->emailAttachments = $emailData->attachments;
         $this->emailInlineAttachments = $emailData->inlineAttachments;
         $this->deactivateUrl = URL::signedRoute('deactivate', ['alias' => $alias->id]);
+        $this->deactivatePostUrl = URL::temporarySignedRoute('deactivate_post', now()->addDays(30), ['alias' => $alias->id]);
+        $this->deletePostUrl = URL::temporarySignedRoute('delete_post', now()->addDays(30), ['alias' => $alias->id]);
+        $this->blockEmailPostUrl = null;
+        $this->blockDomainPostUrl = null;
+        if (filter_var($this->sender, FILTER_VALIDATE_EMAIL)) {
+            $this->blockEmailPostUrl = URL::temporarySignedRoute('block_email_post', now()->addDays(30), ['alias' => $alias->id, 'email' => $this->sender]);
+        }
+        if (Str::contains($this->sender, '@')) {
+            $senderDomain = Str::afterLast($this->sender, '@');
+            if (strlen($senderDomain) > 0 && strlen($senderDomain) <= 253) {
+                $this->blockDomainPostUrl = URL::temporarySignedRoute('block_domain_post', now()->addDays(30), ['alias' => $alias->id, 'domain' => $senderDomain]);
+            }
+        }
         $this->size = $emailData->size;
         $this->messageId = $emailData->messageId;
         $this->listUnsubscribe = $emailData->listUnsubscribe;
@@ -276,14 +298,43 @@ class ForwardEmail extends Mailable implements ShouldBeEncrypted, ShouldQueue
                         ->addIdHeader('Message-ID', bin2hex(random_bytes(16)).'@'.$this->alias->domain);
                 }
 
-                if ($this->listUnsubscribe) {
-                    $message->getHeaders()
-                        ->addTextHeader('List-Unsubscribe', base64_decode($this->listUnsubscribe));
+                $behaviour = $this->user->list_unsubscribe_behaviour;
 
-                    // Only check if has original List-Unsubscribe
-                    if ($this->listUnsubscribePost) {
+                if ($behaviour === ListUnsubscribeBehaviour::Deactivate) {
+                    $message->getHeaders()
+                        ->addTextHeader('List-Unsubscribe', '<'.$this->deactivatePostUrl.'>');
+                    $message->getHeaders()
+                        ->addTextHeader('List-Unsubscribe-Post', 'List-Unsubscribe=One-Click');
+                } elseif ($behaviour === ListUnsubscribeBehaviour::Delete) {
+                    $message->getHeaders()
+                        ->addTextHeader('List-Unsubscribe', '<'.$this->deletePostUrl.'>');
+                    $message->getHeaders()
+                        ->addTextHeader('List-Unsubscribe-Post', 'List-Unsubscribe=One-Click');
+                } elseif ($behaviour === ListUnsubscribeBehaviour::BlockEmail && $this->blockEmailPostUrl) {
+                    $message->getHeaders()
+                        ->addTextHeader('List-Unsubscribe', '<'.$this->blockEmailPostUrl.'>');
+                    $message->getHeaders()
+                        ->addTextHeader('List-Unsubscribe-Post', 'List-Unsubscribe=One-Click');
+                } elseif ($behaviour === ListUnsubscribeBehaviour::BlockDomain && $this->blockDomainPostUrl) {
+                    $message->getHeaders()
+                        ->addTextHeader('List-Unsubscribe', '<'.$this->blockDomainPostUrl.'>');
+                    $message->getHeaders()
+                        ->addTextHeader('List-Unsubscribe-Post', 'List-Unsubscribe=One-Click');
+                } else {
+                    // ListUnsubscribeBehaviour::OriginalWithFallback
+                    if ($this->listUnsubscribe) {
+                        $listUnsubscribeValue = $this->rewriteListUnsubscribeMailtoAddresses(base64_decode($this->listUnsubscribe));
                         $message->getHeaders()
-                            ->addTextHeader('List-Unsubscribe-Post', base64_decode($this->listUnsubscribePost));
+                            ->addTextHeader('List-Unsubscribe', $listUnsubscribeValue);
+                        if ($this->listUnsubscribePost) {
+                            $message->getHeaders()
+                                ->addTextHeader('List-Unsubscribe-Post', base64_decode($this->listUnsubscribePost));
+                        }
+                    } else {
+                        $message->getHeaders()
+                            ->addTextHeader('List-Unsubscribe', '<'.$this->deactivatePostUrl.'>');
+                        $message->getHeaders()
+                            ->addTextHeader('List-Unsubscribe-Post', 'List-Unsubscribe=One-Click');
                     }
                 }
 
@@ -498,6 +549,31 @@ class ForwardEmail extends Mailable implements ShouldBeEncrypted, ShouldQueue
             'code' => $exception->getMessage(),
             'attempted_at' => now(),
         ]);
+    }
+
+    /**
+     * Rewrite mailto: addresses in List-Unsubscribe so replies go to the alias and do not expose the user's real email.
+     */
+    private function rewriteListUnsubscribeMailtoAddresses(string $headerValue): string
+    {
+        // Normalise folded/invalid whitespace so malformed headers can still be reused safely.
+        $normalisedHeaderValue = preg_replace('/\s*[\r\n]+\s*/', ' ', trim($headerValue));
+        $normalisedHeaderValue = preg_replace('/\s*,\s*/', ', ', $normalisedHeaderValue);
+
+        return preg_replace_callback(
+            '/<mailto:([^>?]+)(\?[^>]*)?>/i',
+            function (array $matches) {
+                $address = trim($matches[1]);
+                if (! str_contains($address, '@')) {
+                    return $matches[0];
+                }
+                $rewritten = $this->alias->local_part.'+'.Str::replaceLast('@', '=', $address).'@'.$this->alias->domain;
+                $query = $matches[2] ?? '';
+
+                return '<mailto:'.$rewritten.$query.'>';
+            },
+            $normalisedHeaderValue
+        );
     }
 
     private function getUserDisplayFrom($displayFrom)

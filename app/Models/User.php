@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\DisplayFromFormat;
+use App\Enums\ListUnsubscribeBehaviour;
 use App\Enums\LoginRedirect;
 use App\Notifications\CustomResetPassword;
 use App\Notifications\CustomVerifyEmail;
@@ -16,6 +17,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Str;
 use Laravel\Sanctum\HasApiTokens;
 
@@ -42,6 +44,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'email_subject',
         'banner_location',
         'spam_warning_behaviour',
+        'list_unsubscribe_behaviour',
         'display_from_format',
         'login_redirect',
         'catch_all',
@@ -106,6 +109,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'defer_until' => 'datetime',
         'defer_new_aliases_until' => 'datetime',
         'display_from_format' => DisplayFromFormat::class,
+        'list_unsubscribe_behaviour' => ListUnsubscribeBehaviour::class,
         'login_redirect' => LoginRedirect::class,
     ];
 
@@ -259,6 +263,14 @@ class User extends Authenticatable implements MustVerifyEmail
     public function rules()
     {
         return $this->hasMany(Rule::class);
+    }
+
+    /**
+     * Get all of the user's blocked senders (email or domain blocklist).
+     */
+    public function blockedSenders()
+    {
+        return $this->hasMany(BlockedSender::class);
     }
 
     /**
@@ -489,7 +501,7 @@ class User extends Authenticatable implements MustVerifyEmail
             return false;
         }
 
-        return \Illuminate\Support\Facades\Redis::throttle("user:{$this->id}:limit:new-alias")
+        return Redis::throttle("user:{$this->id}:limit:new-alias")
             ->allow(config('anonaddy.new_alias_hourly_limit'))
             ->every(3600)
             ->then(

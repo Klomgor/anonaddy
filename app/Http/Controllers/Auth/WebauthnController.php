@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Actions\PrepareCreationData;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use LaravelWebauthn\Actions\ValidateKeyCreation;
 use LaravelWebauthn\Contracts\DestroyResponse;
@@ -38,7 +40,7 @@ class WebauthnController extends ControllersWebauthnController
     /**
      * Validate and create the Webauthn request.
      *
-     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
+     * @return JsonResponse|RedirectResponse
      */
     public function store(WebauthnRegisterRequest $request): RegisterSuccessResponse
     {
@@ -60,7 +62,7 @@ class WebauthnController extends ControllersWebauthnController
     /**
      * Remove an existing Webauthn key.
      *
-     * @return \Illuminate\Http\JsonResponse
+     * @return JsonResponse
      */
     public function destroy(Request $request, $webauthnKeyId): DestroyResponse
     {

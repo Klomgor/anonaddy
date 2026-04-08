@@ -8,6 +8,7 @@ return [
         'domains.*',
         'usernames.*',
         'domains.*',
+        'blocklist.*',
         'failed_deliveries.*',
         'rules.*',
         'settings.*',

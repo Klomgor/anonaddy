@@ -31,7 +31,7 @@ class CustomResetPassword extends Notification implements ShouldBeEncrypted, Sho
     /**
      * The callback that should be used to build the mail message.
      *
-     * @var (\Closure(mixed, string): \Illuminate\Notifications\Messages\MailMessage)|null
+     * @var (\Closure(mixed, string): MailMessage)|null
      */
     public static $toMailCallback;
 
@@ -61,7 +61,7 @@ class CustomResetPassword extends Notification implements ShouldBeEncrypted, Sho
      * Build the mail representation of the notification.
      *
      * @param  mixed  $notifiable
-     * @return \Illuminate\Notifications\Messages\MailMessage
+     * @return MailMessage
      */
     public function toMail($notifiable)
     {
@@ -76,7 +76,7 @@ class CustomResetPassword extends Notification implements ShouldBeEncrypted, Sho
      * Get the reset password notification mail message for the given URL.
      *
      * @param  string  $url
-     * @return \Illuminate\Notifications\Messages\MailMessage
+     * @return MailMessage
      */
     protected function buildMailMessage($url, $notifiable)
     {
@@ -130,7 +130,7 @@ class CustomResetPassword extends Notification implements ShouldBeEncrypted, Sho
     /**
      * Set a callback that should be used when building the notification mail message.
      *
-     * @param  \Closure(mixed, string): \Illuminate\Notifications\Messages\MailMessage  $callback
+     * @param  \Closure(mixed, string): MailMessage  $callback
      * @return void
      */
     public static function toMailUsing($callback)

@@ -482,6 +482,7 @@ import {
   ExclamationTriangleIcon,
   FunnelIcon,
   CheckCircleIcon,
+  NoSymbolIcon,
 } from '@heroicons/vue/24/outline'
 import { MagnifyingGlassIcon } from '@heroicons/vue/24/solid'
 import { CheckIcon, ChevronDownIcon, ArrowTopRightOnSquareIcon } from '@heroicons/vue/20/solid'
@@ -505,6 +506,7 @@ const sidebarNavigation = [
     route: 'failed_deliveries.index',
     icon: ExclamationTriangleIcon,
   },
+  { name: 'Blocklist', route: 'blocklist.index', icon: NoSymbolIcon },
   { name: 'Settings', route: 'settings.show', icon: Cog6ToothIcon },
 ]
 
@@ -528,6 +530,11 @@ const searchOptions = [
     title: 'Failed Deliveries',
     route: 'failed_deliveries.index',
     description: 'Search by error message',
+  },
+  {
+    title: 'Blocklist',
+    route: 'blocklist.index',
+    description: 'Search by value or type',
   },
 ]
 

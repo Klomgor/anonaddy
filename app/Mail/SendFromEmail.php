@@ -242,6 +242,7 @@ class SendFromEmail extends Mailable implements ShouldBeEncrypted, ShouldQueue
         $this->email->with([
             'userId' => $this->user->id,
             'aliasId' => $this->alias->id,
+            'recipientId' => $this->recipient->id,
             'emailType' => 'S',
             'shouldBlock' => $this->size === 0,
             'encryptedParts' => $this->encryptedParts,
@@ -292,7 +293,7 @@ class SendFromEmail extends Mailable implements ShouldBeEncrypted, ShouldQueue
         }
 
         $this->user->failedDeliveries()->create([
-            'recipient_id' => null,
+            'recipient_id' => $this->recipient->id,
             'alias_id' => $this->alias->id,
             'bounce_type' => null,
             'remote_mta' => null,

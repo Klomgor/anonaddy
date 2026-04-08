@@ -1,5 +1,9 @@
 <?php
 
+use App\Http\Middleware\BlocklistApiMiddleware;
+use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\ProxyAuthentication;
+use App\Http\Middleware\VerifyTwoFactorAuthMethods;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -28,17 +32,22 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->validateCsrfTokens(
             except: [
+                'deactivate-one-click/*', // One-Click Unsubscribe
+                'delete-one-click/*', // One-Click Delete
+                'block-email-one-click/*', // One-Click Block Sender Email
+                'block-domain-one-click/*', // One-Click Block Sender Domain
                 'api/auth/login',
             ]
         );
 
         $middleware->web(append: [
-            \App\Http\Middleware\ProxyAuthentication::class,
-            \App\Http\Middleware\HandleInertiaRequests::class, // Must be the last item!
+            ProxyAuthentication::class,
+            HandleInertiaRequests::class, // Must be the last item!
         ]);
 
         $middleware->alias([
-            '2fa' => \App\Http\Middleware\VerifyTwoFactorAuthMethods::class,
+            '2fa' => VerifyTwoFactorAuthMethods::class,
+            'blocklist.api' => BlocklistApiMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

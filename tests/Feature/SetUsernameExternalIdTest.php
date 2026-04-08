@@ -7,6 +7,7 @@ use App\Models\Username;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use PHPUnit\Framework\Attributes\Test;
+use Symfony\Component\Console\Exception\RuntimeException;
 use Tests\TestCase;
 
 class SetUsernameExternalIdTest extends TestCase
@@ -30,7 +31,7 @@ class SetUsernameExternalIdTest extends TestCase
     #[Test]
     public function handle_validation_should_fail_when_username_not_provided()
     {
-        $this->expectException(\Symfony\Component\Console\Exception\RuntimeException::class);
+        $this->expectException(RuntimeException::class);
         $this
             ->artisan('anonaddy:set-username-externalid')
             ->assertExitCode(1);
@@ -39,7 +40,7 @@ class SetUsernameExternalIdTest extends TestCase
     #[Test]
     public function handle_validation_should_fail_when_external_id_not_provided()
     {
-        $this->expectException(\Symfony\Component\Console\Exception\RuntimeException::class);
+        $this->expectException(RuntimeException::class);
         $this
             ->artisan('anonaddy:set-username-externalid test_username')
             ->assertExitCode(1);

@@ -177,86 +177,85 @@
           />
         </span>
         <span v-else-if="props.column.field === 'domain_sending_verified_at'">
-          <div v-if="props.row.domain_sending_verified_at || props.row.domain_mx_validated_at">
-            <svg
-              v-if="props.row.domain_sending_verified_at && props.row.domain_mx_validated_at"
-              class="h-5 w-5 inline-block tooltip focus:outline-none"
-              data-tippy-content="Domain fully verified"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 20 20"
-            >
-              <g fill="none" fill-rule="evenodd">
-                <circle class="text-green-100 fill-current" cx="10" cy="10" r="10"></circle>
-                <polyline
-                  class="text-green-800 stroke-current"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  points="6 10 8.667 12.667 14 7.333"
-                ></polyline>
-              </g>
-            </svg>
-            <svg
-              v-else-if="!props.row.domain_mx_validated_at"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 20 20"
-              class="h-5 w-5 inline-block tooltip focus:outline-none"
-              data-tippy-content="MX records invalid"
-            >
-              <g fill="none" fill-rule="evenodd">
-                <circle cx="10" cy="10" r="10" fill="#FF9B9B"></circle>
-                <polyline
-                  stroke="#AB091E"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  points="14 6 6 14"
-                ></polyline>
-                <polyline
-                  stroke="#AB091E"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  points="6 6 14 14"
-                ></polyline>
-              </g>
-            </svg>
-            <svg
-              v-else
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 20 20"
-              class="h-5 w-5 inline-block tooltip focus:outline-none"
-              data-tippy-content="DNS records for sending invalid"
-            >
-              <g fill="none" fill-rule="evenodd">
-                <circle cx="10" cy="10" r="10" fill="#FF9B9B"></circle>
-                <polyline
-                  stroke="#AB091E"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  points="14 6 6 14"
-                ></polyline>
-                <polyline
-                  stroke="#AB091E"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  points="6 6 14 14"
-                ></polyline>
-              </g>
-            </svg>
-            <button
-              @click="openCheckRecordsModal(rows[props.row.originalIndex])"
-              class="focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 text-sm ml-2 text-grey-500 dark:text-grey-300 rounded-sm"
-            >
-              Recheck
-            </button>
-          </div>
+          <svg
+            v-if="props.row.domain_sending_verified_at && props.row.domain_mx_validated_at"
+            class="h-5 w-5 inline-block tooltip focus:outline-none"
+            data-tippy-content="Domain fully verified"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 20 20"
+          >
+            <g fill="none" fill-rule="evenodd">
+              <circle class="text-green-100 fill-current" cx="10" cy="10" r="10"></circle>
+              <polyline
+                class="text-green-800 stroke-current"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                points="6 10 8.667 12.667 14 7.333"
+              ></polyline>
+            </g>
+          </svg>
+          <svg
+            v-else-if="!props.row.domain_mx_validated_at"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 20 20"
+            class="h-5 w-5 inline-block tooltip focus:outline-none"
+            data-tippy-content="MX records invalid"
+          >
+            <g fill="none" fill-rule="evenodd">
+              <circle cx="10" cy="10" r="10" fill="#FF9B9B"></circle>
+              <polyline
+                stroke="#AB091E"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                points="14 6 6 14"
+              ></polyline>
+              <polyline
+                stroke="#AB091E"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                points="6 6 14 14"
+              ></polyline>
+            </g>
+          </svg>
+          <svg
+            v-else
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 20 20"
+            class="h-5 w-5 inline-block tooltip focus:outline-none"
+            data-tippy-content="DNS records for sending invalid"
+          >
+            <g fill="none" fill-rule="evenodd">
+              <circle cx="10" cy="10" r="10" fill="#FF9B9B"></circle>
+              <polyline
+                stroke="#AB091E"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                points="14 6 6 14"
+              ></polyline>
+              <polyline
+                stroke="#AB091E"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                points="6 6 14 14"
+              ></polyline>
+            </g>
+          </svg>
+          <button
+            v-if="props.row.domain_sending_verified_at || props.row.domain_mx_validated_at"
+            @click="openCheckRecordsModal(rows[props.row.originalIndex])"
+            class="focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 text-sm ml-2 text-grey-500 dark:text-grey-300 rounded-sm"
+          >
+            Recheck
+          </button>
           <button
             v-else
             @click="openCheckRecordsModal(rows[props.row.originalIndex])"
-            class="focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 text-sm text-grey-500 dark:text-grey-300 rounded-sm"
+            class="focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 text-sm ml-2 text-grey-500 dark:text-grey-300 rounded-sm"
           >
             Check Records
           </button>

@@ -2,11 +2,12 @@
 
 require __DIR__.'/vendor/autoload.php';
 
+use Dotenv\Repository\RepositoryBuilder;
 use Illuminate\Database\Capsule\Manager as Database;
 use ParagonIE\ConstantTime\Base32;
 
 try {
-    $repository = Dotenv\Repository\RepositoryBuilder::createWithDefaultAdapters()
+    $repository = RepositoryBuilder::createWithDefaultAdapters()
         ->allowList([
             'DB_HOST',
             'DB_PORT',
@@ -247,7 +248,7 @@ try {
             sendAction(getAction($domainActionQuery));
         }
     }
-} catch (\Throwable $e) {
+} catch (Throwable $e) {
     logData($e->getMessage());
 
     exit(0);
@@ -292,7 +293,7 @@ function getIdFromVerp($verpLocalPart, $verpEmail)
         $id = Base32::decodeNoPadding($parts[1]);
 
         $signature = Base32::decodeNoPadding($parts[2]);
-    } catch (\Exception $e) {
+    } catch (Exception $e) {
         logData('VERP base32 decode failure: '.$verpEmail.' '.$e->getMessage());
 
         return;

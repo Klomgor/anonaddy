@@ -6,6 +6,7 @@ use App\Models\Username;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use PHPUnit\Framework\Attributes\Test;
+use Symfony\Component\Console\Exception\RuntimeException;
 use Tests\TestCase;
 
 class RemoveUsernameExternalIdTest extends TestCase
@@ -29,7 +30,7 @@ class RemoveUsernameExternalIdTest extends TestCase
     #[Test]
     public function handle_validation_should_fail_when_username_not_provided()
     {
-        $this->expectException(\Symfony\Component\Console\Exception\RuntimeException::class);
+        $this->expectException(RuntimeException::class);
         $this
             ->artisan('anonaddy:remove-username-externalid')
             ->assertExitCode(1);

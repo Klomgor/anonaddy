@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Facades\Webauthn;
 use Closure;
+use Illuminate\Http\Request;
 use PragmaRX\Google2FALaravel\Support\Authenticator;
 
 class VerifyTwoFactorAuthMethods
@@ -11,7 +12,7 @@ class VerifyTwoFactorAuthMethods
     /**
      * Handle an incoming request.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param  Request  $request
      * @return mixed
      */
     public function handle($request, Closure $next)

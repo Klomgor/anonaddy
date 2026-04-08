@@ -1,11 +1,18 @@
 <?php
 
+use App\Providers\AppServiceProvider;
+use App\Providers\AuthServiceProvider;
+use App\Providers\CustomMailServiceProvider;
+use App\Providers\EventServiceProvider;
+use App\Providers\HelperServiceProvider;
+use App\Providers\RouteServiceProvider;
+
 return [
-    App\Providers\AppServiceProvider::class,
-    App\Providers\AuthServiceProvider::class,
+    AppServiceProvider::class,
+    AuthServiceProvider::class,
     // App\Providers\BroadcastServiceProvider::class,
-    App\Providers\EventServiceProvider::class,
-    App\Providers\RouteServiceProvider::class,
-    App\Providers\HelperServiceProvider::class,
-    App\Providers\CustomMailServiceProvider::class,
+    EventServiceProvider::class,
+    RouteServiceProvider::class,
+    HelperServiceProvider::class,
+    CustomMailServiceProvider::class,
 ];

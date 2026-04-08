@@ -2,6 +2,7 @@
 
 namespace App\Http\Responses;
 
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Response;
 use LaravelWebauthn\Http\Responses\RegisterViewResponse as RegisterViewResponseBase;
 
@@ -10,7 +11,7 @@ class RegisterViewResponse extends RegisterViewResponseBase
     /**
      * Create an HTTP response that represents the object.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param  Request  $request
      * @return \Symfony\Component\HttpFoundation\Response
      */
     public function toResponse($request)

@@ -255,6 +255,7 @@ class Domain extends Model
             return response()->json([
                 'success' => true,
                 'message' => 'Records verified for sending.',
+                'data' => new DomainResource($this->fresh()),
             ]);
         }
 
@@ -273,6 +274,7 @@ class Domain extends Model
             return response()->json([
                 'success' => false,
                 'message' => 'SPF record not found. This could be due to DNS caching, please try again later.',
+                'data' => new DomainResource($this->fresh()),
             ]);
         }
 
@@ -291,6 +293,7 @@ class Domain extends Model
             return response()->json([
                 'success' => false,
                 'message' => 'DMARC record not found. This could be due to DNS caching, please try again later.',
+                'data' => new DomainResource($this->fresh()),
             ]);
         }
 
@@ -309,6 +312,7 @@ class Domain extends Model
             return response()->json([
                 'success' => false,
                 'message' => 'CNAME '.config('anonaddy.dkim_selector').'._domainkey record not found. This could be due to DNS caching, please try again later.',
+                'data' => new DomainResource($this->fresh()),
             ]);
         }
 

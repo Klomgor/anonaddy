@@ -26,6 +26,8 @@
     },
     "require-dev": {
         "fakerphp/faker": "^1.9.1",
+        "laravel/boost": "^2.1",
+        "laravel/envoy": "^2.12",
         "laravel/pint": "^1.2",
         "mockery/mockery": "^1.4.4",
         "nunomaduro/collision": "^8.1",
@@ -77,7 +79,8 @@
             "@php artisan key:generate --ansi"
         ],
         "post-update-cmd": [
-          "cd ./postfix && composer update"
+          "cd ./postfix && composer update",
+          "@php artisan boost:update --ansi"
         ],
         "format": [
             "./vendor/bin/pint"

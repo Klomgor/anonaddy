@@ -2,7 +2,9 @@
 
 namespace Tests;
 
+use App\Models\Recipient;
 use App\Models\User;
+use App\Models\Username;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Illuminate\Testing\TestResponse;
@@ -81,8 +83,8 @@ abstract class TestCase extends BaseTestCase
             'default_recipient_id' => $recipientId,
             'default_username_id' => $usernameId,
         ], $userAttributes))
-            ->has(\App\Models\Username::factory($usernameAttribubes), 'defaultUsername')
-            ->has(\App\Models\Recipient::factory($recipientAttribubes), 'defaultRecipient')
+            ->has(Username::factory($usernameAttribubes), 'defaultUsername')
+            ->has(Recipient::factory($recipientAttribubes), 'defaultRecipient')
             ->create();
 
         // Return correct type for tests

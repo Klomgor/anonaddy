@@ -2,6 +2,7 @@
 
 namespace App\Http\Responses;
 
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Response;
 use LaravelWebauthn\Facades\Webauthn;
 use LaravelWebauthn\Http\Responses\LoginViewResponse as LoginViewResponseBase;
@@ -12,11 +13,15 @@ class LoginViewResponse extends LoginViewResponseBase
     /**
      * Create an HTTP response that represents the object.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param  Request  $request
      * @return \Symfony\Component\HttpFoundation\Response
      */
     public function toResponse($request)
     {
+        if ($request->user() === null) {
+            return Response::redirectTo(route('login'));
+        }
+
         // If user has no 2FA methods enabled, redirect home
         if (! $request->user()->hasAnyTwoFactorEnabled()) {
             return Response::redirectTo('/');

@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\DisplayFromFormat;
+use App\Enums\ListUnsubscribeBehaviour;
 use App\Exports\AliasesExport;
 use App\Imports\AliasesImport;
 use App\Models\Alias;
@@ -386,6 +387,43 @@ class SettingsTest extends TestCase
 
         $response->assertSessionHasErrors(['spam_warning_behaviour']);
         $this->assertEquals('banner', $this->user->spam_warning_behaviour);
+    }
+
+    #[Test]
+    public function user_can_update_list_unsubscribe_behaviour()
+    {
+        $this->assertEquals(ListUnsubscribeBehaviour::OriginalWithFallback, $this->user->fresh()->list_unsubscribe_behaviour);
+
+        $response = $this->post('/settings/list-unsubscribe-behaviour', [
+            'list_unsubscribe_behaviour' => ListUnsubscribeBehaviour::Delete->value,
+        ]);
+
+        $response->assertStatus(302);
+        $this->assertEquals(ListUnsubscribeBehaviour::Delete, $this->user->fresh()->list_unsubscribe_behaviour);
+
+        $this->post('/settings/list-unsubscribe-behaviour', [
+            'list_unsubscribe_behaviour' => ListUnsubscribeBehaviour::OriginalWithFallback->value,
+        ]);
+        $this->assertEquals(ListUnsubscribeBehaviour::OriginalWithFallback, $this->user->fresh()->list_unsubscribe_behaviour);
+
+        $this->post('/settings/list-unsubscribe-behaviour', [
+            'list_unsubscribe_behaviour' => ListUnsubscribeBehaviour::Deactivate->value,
+        ]);
+        $this->assertEquals(ListUnsubscribeBehaviour::Deactivate, $this->user->fresh()->list_unsubscribe_behaviour);
+    }
+
+    #[Test]
+    public function user_cannot_update_list_unsubscribe_behaviour_to_incorrect_value()
+    {
+        $this->assertEquals(ListUnsubscribeBehaviour::OriginalWithFallback, $this->user->fresh()->list_unsubscribe_behaviour);
+
+        $response = $this->post('/settings/list-unsubscribe-behaviour', [
+            'list_unsubscribe_behaviour' => 99,
+        ]);
+
+        $response->assertStatus(302);
+        $response->assertSessionHasErrors(['list_unsubscribe_behaviour']);
+        $this->assertEquals(ListUnsubscribeBehaviour::OriginalWithFallback, $this->user->fresh()->list_unsubscribe_behaviour);
     }
 
     #[Test]

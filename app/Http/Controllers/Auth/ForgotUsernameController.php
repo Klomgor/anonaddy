@@ -4,8 +4,11 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\Recipient;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
+use Illuminate\View\View;
 
 class ForgotUsernameController extends Controller
 {
@@ -23,7 +26,7 @@ class ForgotUsernameController extends Controller
     /**
      * Display the form to request a password reset link.
      *
-     * @return \Illuminate\View\View
+     * @return View
      */
     public function show()
     {
@@ -33,7 +36,7 @@ class ForgotUsernameController extends Controller
     /**
      * Send a reset link to the given user.
      *
-     * @return \Illuminate\Http\RedirectResponse|\Illuminate\Http\JsonResponse
+     * @return RedirectResponse|JsonResponse
      */
     public function sendReminderEmail(Request $request)
     {

@@ -140,6 +140,21 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Blocklist API (Rspamd / internal mail servers)
+    |--------------------------------------------------------------------------
+    |
+    | Used by the blocklist-check endpoint. Only requests from
+    | allowed IPs (and with the shared secret if set) are accepted.
+    |
+    */
+
+    'blocklist' => [
+        'allowed_ips' => array_filter(array_map('trim', explode(',', env('BLOCKLIST_API_ALLOWED_IPS', '127.0.0.1')))),
+        'secret' => env('BLOCKLIST_API_SECRET', ''),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | All Domains
     |--------------------------------------------------------------------------
     |

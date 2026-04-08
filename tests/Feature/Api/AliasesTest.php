@@ -104,6 +104,78 @@ class AliasesTest extends TestCase
     }
 
     #[Test]
+    public function pinned_aliases_appear_first_when_listing()
+    {
+        $unpinnedFirst = Alias::factory()->create([
+            'user_id' => $this->user->id,
+            'email' => 'aaa@example.com',
+            'local_part' => 'aaa',
+            'domain' => 'example.com',
+            'pinned' => false,
+        ]);
+        $pinned = Alias::factory()->create([
+            'user_id' => $this->user->id,
+            'email' => 'zzz@example.com',
+            'local_part' => 'zzz',
+            'domain' => 'example.com',
+            'pinned' => true,
+        ]);
+        $unpinnedSecond = Alias::factory()->create([
+            'user_id' => $this->user->id,
+            'email' => 'mmm@example.com',
+            'local_part' => 'mmm',
+            'domain' => 'example.com',
+            'pinned' => false,
+        ]);
+
+        $response = $this->json('GET', '/api/v1/aliases');
+
+        $response->assertSuccessful();
+        $data = $response->json()['data'];
+        $this->assertCount(3, $data);
+        $this->assertEquals($pinned->id, $data[0]['id']);
+        $this->assertTrue($data[0]['pinned']);
+    }
+
+    #[Test]
+    public function user_can_get_only_pinned_aliases()
+    {
+        Alias::factory()->create([
+            'user_id' => $this->user->id,
+            'pinned' => true,
+        ]);
+        Alias::factory()->count(2)->create([
+            'user_id' => $this->user->id,
+            'pinned' => false,
+        ]);
+
+        $response = $this->json('GET', '/api/v1/aliases?filter[pinned]=true');
+
+        $response->assertSuccessful();
+        $this->assertCount(1, $response->json()['data']);
+        $this->assertTrue($response->json()['data'][0]['pinned']);
+    }
+
+    #[Test]
+    public function user_can_get_only_unpinned_aliases()
+    {
+        Alias::factory()->count(2)->create([
+            'user_id' => $this->user->id,
+            'pinned' => true,
+        ]);
+        Alias::factory()->create([
+            'user_id' => $this->user->id,
+            'pinned' => false,
+        ]);
+
+        $response = $this->json('GET', '/api/v1/aliases?filter[pinned]=false');
+
+        $response->assertSuccessful();
+        $this->assertCount(1, $response->json()['data']);
+        $this->assertFalse($response->json()['data'][0]['pinned']);
+    }
+
+    #[Test]
     public function user_can_get_individual_alias()
     {
         // Arrange
@@ -477,6 +549,36 @@ class AliasesTest extends TestCase
 
         $response->assertStatus(204);
         $this->assertFalse($this->user->aliases[0]->active);
+    }
+
+    #[Test]
+    public function user_can_pin_alias()
+    {
+        $alias = Alias::factory()->create([
+            'user_id' => $this->user->id,
+            'pinned' => false,
+        ]);
+
+        $response = $this->json('POST', '/api/v1/pinned-aliases/', [
+            'id' => $alias->id,
+        ]);
+
+        $response->assertStatus(200);
+        $this->assertEquals(true, $response->getData()->data->pinned);
+    }
+
+    #[Test]
+    public function user_can_unpin_alias()
+    {
+        $alias = Alias::factory()->create([
+            'user_id' => $this->user->id,
+            'pinned' => true,
+        ]);
+
+        $response = $this->json('DELETE', '/api/v1/pinned-aliases/'.$alias->id);
+
+        $response->assertStatus(204);
+        $this->assertFalse($this->user->aliases[0]->pinned);
     }
 
     #[Test]

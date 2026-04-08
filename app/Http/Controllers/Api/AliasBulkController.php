@@ -86,6 +86,44 @@ class AliasBulkController extends Controller
         ], 200);
     }
 
+    public function pin(GeneralAliasBulkRequest $request)
+    {
+        $aliasIds = user()->aliases()->withTrashed()
+            ->where('pinned', false)
+            ->whereIn('id', $request->ids)
+            ->pluck('id');
+
+        if (! $aliasIdsCount = $aliasIds->count()) {
+            return response()->json(['message' => 'No aliases found'], 404);
+        }
+
+        user()->aliases()->whereIn('id', $aliasIds)->update(['pinned' => true]);
+
+        return response()->json([
+            'message' => $aliasIdsCount === 1 ? '1 alias pinned successfully' : "{$aliasIdsCount} aliases pinned successfully",
+            'ids' => $aliasIds,
+        ], 200);
+    }
+
+    public function unpin(GeneralAliasBulkRequest $request)
+    {
+        $aliasIds = user()->aliases()->withTrashed()
+            ->where('pinned', true)
+            ->whereIn('id', $request->ids)
+            ->pluck('id');
+
+        if (! $aliasIdsCount = $aliasIds->count()) {
+            return response()->json(['message' => 'No aliases found'], 404);
+        }
+
+        user()->aliases()->whereIn('id', $aliasIds)->update(['pinned' => false]);
+
+        return response()->json([
+            'message' => $aliasIdsCount === 1 ? '1 alias unpinned successfully' : "{$aliasIdsCount} aliases unpinned successfully",
+            'ids' => $aliasIds,
+        ], 200);
+    }
+
     public function delete(GeneralAliasBulkRequest $request)
     {
         $aliasIds = user()->aliases()

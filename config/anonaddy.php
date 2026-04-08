@@ -163,7 +163,7 @@ return [
     |
     */
 
-    'all_domains' => explode(',', env('ANONADDY_ALL_DOMAINS')),
+    'all_domains' => explode(',', env('ANONADDY_ALL_DOMAINS', '[]')),
 
     /*
     |--------------------------------------------------------------------------

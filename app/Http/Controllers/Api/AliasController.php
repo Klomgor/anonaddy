@@ -26,6 +26,7 @@ class AliasController extends Controller
             ->when($request->input('username'), function ($query, $id) {
                 return $query->belongsToAliasable('App\Models\Username', $id);
             })
+            ->orderBy('pinned', 'desc')
             ->when($request->input('sort'), function ($query, $sort) {
                 $direction = strpos($sort, '-') === 0 ? 'desc' : 'asc';
                 $sort = ltrim($sort, '-');
@@ -68,6 +69,9 @@ class AliasController extends Controller
                 $active = $value === 'true' ? true : false;
 
                 return $query->where('active', $active);
+            })
+            ->when($request->input('filter.pinned'), function ($query, $value) {
+                return $query->where('pinned', $value === 'true');
             });
 
         // Keep /aliases?deleted=with for backwards compatibility

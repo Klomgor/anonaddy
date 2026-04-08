@@ -24,6 +24,7 @@ use App\Http\Controllers\Api\EncryptedRecipientController;
 use App\Http\Controllers\Api\FailedDeliveryController;
 use App\Http\Controllers\Api\InlineEncryptedRecipientController;
 use App\Http\Controllers\Api\LoginableUsernameController;
+use App\Http\Controllers\Api\PinnedAliasController;
 use App\Http\Controllers\Api\ProtectedHeadersRecipientController;
 use App\Http\Controllers\Api\RecipientController;
 use App\Http\Controllers\Api\RecipientKeyController;
@@ -79,6 +80,8 @@ Route::group([
         Route::post('/aliases/get/bulk', 'get');
         Route::post('/aliases/activate/bulk', 'activate');
         Route::post('/aliases/deactivate/bulk', 'deactivate');
+        Route::post('/aliases/pin/bulk', 'pin');
+        Route::post('/aliases/unpin/bulk', 'unpin');
         Route::post('/aliases/delete/bulk', 'delete');
         Route::post('/aliases/restore/bulk', 'restore');
         Route::post('/aliases/forget/bulk', 'forget');
@@ -88,6 +91,11 @@ Route::group([
     Route::controller(ActiveAliasController::class)->group(function () {
         Route::post('/active-aliases', 'store');
         Route::delete('/active-aliases/{id}', 'destroy');
+    });
+
+    Route::controller(PinnedAliasController::class)->group(function () {
+        Route::post('/pinned-aliases', 'store');
+        Route::delete('/pinned-aliases/{id}', 'destroy');
     });
 
     Route::controller(AttachedRecipientOnlyController::class)->group(function () {

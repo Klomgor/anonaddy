@@ -16,6 +16,7 @@ class UserResource extends JsonResource
             ->selectRaw('ifnull(sum(active=1),0) as active')
             ->selectRaw('ifnull(sum(CASE WHEN active=0 AND deleted_at IS NULL THEN 1 END),0) as inactive')
             ->selectRaw('ifnull(sum(CASE WHEN deleted_at IS NOT NULL THEN 1 END),0) as deleted')
+            ->selectRaw('ifnull(sum(pinned=1),0) as pinned')
             ->selectRaw('ifnull(sum(emails_forwarded),0) as forwarded')
             ->selectRaw('ifnull(sum(emails_blocked),0) as blocked')
             ->selectRaw('ifnull(sum(emails_replied),0) as replied')
@@ -49,6 +50,7 @@ class UserResource extends JsonResource
             'total_aliases' => (int) $totals->total,
             'total_active_aliases' => (int) $totals->active,
             'total_inactive_aliases' => (int) $totals->inactive,
+            'total_pinned_aliases' => (int) $totals->pinned,
             'total_deleted_aliases' => (int) $totals->deleted,
             'created_at' => $this->created_at->toDateTimeString(),
             'updated_at' => $this->updated_at->toDateTimeString(),

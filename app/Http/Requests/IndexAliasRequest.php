@@ -59,6 +59,11 @@ class IndexAliasRequest extends FormRequest
                 'in:true,false',
                 'string',
             ],
+            'filter.pinned' => [
+                'nullable',
+                'in:true,false',
+                'string',
+            ],
             'sort' => [
                 'nullable',
                 'max:50',

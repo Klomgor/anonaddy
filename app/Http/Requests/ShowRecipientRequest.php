@@ -4,7 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class IndexRecipientRequest extends FormRequest
+class ShowRecipientRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -27,11 +27,6 @@ class IndexRecipientRequest extends FormRequest
             'filter' => [
                 'nullable',
                 'array',
-            ],
-            'filter.verified' => [
-                'nullable',
-                'in:true,false',
-                'string',
             ],
             'filter.alias_count' => [
                 'nullable',

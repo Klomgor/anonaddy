@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\IndexRecipientRequest;
+use App\Http\Requests\ShowRecipientRequest;
 use App\Http\Requests\StoreRecipientRequest;
 use App\Http\Resources\RecipientResource;
 
@@ -11,7 +12,11 @@ class RecipientController extends Controller
 {
     public function index(IndexRecipientRequest $request)
     {
-        $recipients = user()->recipients()->withCount('aliases')->latest();
+        $recipients = user()->recipients()->latest();
+
+        if ($request->input('filter.alias_count') !== 'false') {
+            $recipients->withCount('aliases');
+        }
 
         if ($request->input('filter.verified') === 'true') {
             $recipients->verified();
@@ -24,11 +29,15 @@ class RecipientController extends Controller
         return RecipientResource::collection($recipients->get());
     }
 
-    public function show($id)
+    public function show(ShowRecipientRequest $request, $id)
     {
         $recipient = user()->recipients()->findOrFail($id);
 
-        return new RecipientResource($recipient->loadCount('aliases'));
+        if ($request->input('filter.alias_count') !== 'false') {
+            $recipient->loadCount('aliases');
+        }
+
+        return new RecipientResource($recipient);
     }
 
     public function store(StoreRecipientRequest $request)

@@ -83,6 +83,11 @@ class ShowAliasController extends Controller
                 'nullable',
                 'uuid',
             ],
+            'pinned' => [
+                'nullable',
+                'in:true,false,all',
+                'string',
+            ],
         ]);
 
         $sort = $request->session()->get('aliasesSort', 'created_at');
@@ -91,6 +96,8 @@ class ShowAliasController extends Controller
 
         // current alias status options: active, inactive, all, deleted, active_inactive
         $currentAliasStatus = $request->session()->get('currentAliasStatus', 'active_inactive');
+
+        $pinnedFilter = $request->session()->get('aliasesPinnedFilter');
 
         if ($request->has('sort')) {
             $direction = strpos($request->input('sort'), '-') === 0 ? 'desc' : 'asc';
@@ -120,8 +127,14 @@ class ShowAliasController extends Controller
             $request->session()->put('currentAliasStatus', $currentAliasStatus);
         }
 
+        if ($request->has('pinned')) {
+            $pinnedFilter = $request->input('pinned') === 'all' ? null : $request->input('pinned');
+            $request->session()->put('aliasesPinnedFilter', $pinnedFilter);
+        }
+
         $aliases = user()->aliases()
-            ->select(['id', 'user_id', 'aliasable_id', 'aliasable_type', 'local_part', 'extension', 'email', 'domain', 'description', 'active', 'emails_forwarded', 'emails_blocked', 'emails_replied', 'emails_sent', 'last_forwarded', 'last_blocked', 'last_replied', 'last_sent', 'created_at', 'deleted_at'])
+            ->select(['id', 'user_id', 'aliasable_id', 'aliasable_type', 'local_part', 'extension', 'email', 'domain', 'description', 'active', 'pinned', 'emails_forwarded', 'emails_blocked', 'emails_replied', 'emails_sent', 'last_forwarded', 'last_blocked', 'last_replied', 'last_sent', 'created_at', 'deleted_at'])
+            ->orderBy('pinned', 'desc')
             ->when($request->input('recipient'), function ($query, $id) {
                 return $query->usesRecipientWithId($id, $id === user()->default_recipient_id);
             })
@@ -176,6 +189,9 @@ class ShowAliasController extends Controller
 
                 return $query->whereNotIn('domain', config('anonaddy.all_domains'));
             })
+            ->when($pinnedFilter, function ($query, $value) {
+                return $query->where('pinned', $value === 'true');
+            })
             ->with([
                 'recipients:id,email',
                 'aliasable.defaultRecipient:id,email',
@@ -220,6 +236,7 @@ class ShowAliasController extends Controller
             'sortDirection' => $direction,
             'currentAliasStatus' => $currentAliasStatus,
             'sharedDomains' => user()->sharedDomainOptions(),
+            'pinnedFilter' => $pinnedFilter,
         ]);
     }
 

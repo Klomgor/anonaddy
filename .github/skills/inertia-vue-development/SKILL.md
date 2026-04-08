@@ -30,6 +30,8 @@ Vue page components should be placed in the `resources/js/Pages` directory.
 
 ### Page Component Structure
 
+Important: Vue components must have a single root element.
+
 <!-- Basic Vue Page Component -->
 ```vue
 <script setup>
@@ -311,29 +313,18 @@ defineProps({
 
 ### Polling
 
-Automatically refresh data at intervals:
+Use the `usePoll` composable to automatically refresh data at intervals. It handles cleanup on unmount and throttles polling when the tab is inactive.
 
-<!-- Polling Example -->
+<!-- Basic Polling -->
 ```vue
 <script setup>
-import { router } from '@inertiajs/vue3'
-import { onMounted, onUnmounted } from 'vue'
+import { usePoll } from '@inertiajs/vue3'
 
 defineProps({
     stats: Object
 })
 
-let interval
-
-onMounted(() => {
-    interval = setInterval(() => {
-        router.reload({ only: ['stats'] })
-    }, 5000) // Poll every 5 seconds
-})
-
-onUnmounted(() => {
-    clearInterval(interval)
-})
+usePoll(5000)
 </script>
 
 <template>
@@ -343,6 +334,42 @@ onUnmounted(() => {
     </div>
 </template>
 ```
+
+<!-- Polling With Request Options and Manual Control -->
+```vue
+<script setup>
+import { usePoll } from '@inertiajs/vue3'
+
+defineProps({
+    stats: Object
+})
+
+const { start, stop } = usePoll(5000, {
+    only: ['stats'],
+    onStart() {
+        console.log('Polling request started')
+    },
+    onFinish() {
+        console.log('Polling request finished')
+    },
+}, {
+    autoStart: false,
+    keepAlive: true,
+})
+</script>
+
+<template>
+    <div>
+        <h1>Dashboard</h1>
+        <div>Active Users: {{ stats.activeUsers }}</div>
+        <button @click="start">Start Polling</button>
+        <button @click="stop">Stop Polling</button>
+    </div>
+</template>
+```
+
+- `autoStart` (default `true`) — set to `false` to start polling manually via the returned `start()` function
+- `keepAlive` (default `false`) — set to `true` to prevent throttling when the browser tab is inactive
 
 ### WhenVisible
 
@@ -362,7 +389,6 @@ defineProps({
     <div>
         <h1>Dashboard</h1>
 
-        <!-- stats prop is loaded only when this section scrolls into view -->
         <WhenVisible data="stats" :buffer="200">
             <template #fallback>
                 <div class="animate-pulse">Loading stats...</div>
@@ -379,6 +405,31 @@ defineProps({
     </div>
 </template>
 ```
+
+### InfiniteScroll
+
+Automatically load additional pages of paginated data as users scroll:
+
+<!-- InfiniteScroll Example -->
+```vue
+<script setup>
+import { InfiniteScroll } from '@inertiajs/vue3'
+
+defineProps({
+    users: Object
+})
+</script>
+
+<template>
+    <InfiniteScroll data="users">
+        <div v-for="user in users.data" :key="user.id">
+            {{ user.name }}
+        </div>
+    </InfiniteScroll>
+</template>
+```
+
+The server must use `Inertia::scroll()` to configure the paginated data. Use the `search-docs` tool with a query of `infinite scroll` for detailed guidance on buffers, manual loading, reverse mode, and custom trigger elements.
 
 ## Server-Side Patterns
 

@@ -33,6 +33,7 @@ class RecipientsTest extends TestCase
 
         // Assert
         $response->assertSuccessful();
+        $this->assertArrayHasKey('aliases_count', $response->json()['data'][0]);
         $this->assertCount(4, $response->json()['data']);
     }
 
@@ -51,6 +52,29 @@ class RecipientsTest extends TestCase
         $response->assertSuccessful();
         $this->assertCount(1, $response->json());
         $this->assertEquals($recipient->email, $response->json()['data']['email']);
+        $this->assertArrayHasKey('aliases_count', $response->json()['data']);
+    }
+
+    #[Test]
+    public function recipients_index_omits_alias_count_when_filter_alias_count_is_false()
+    {
+        Recipient::factory()->create(['user_id' => $this->user->id]);
+
+        $response = $this->json('GET', '/api/v1/recipients?filter[alias_count]=false');
+
+        $response->assertSuccessful();
+        $this->assertArrayNotHasKey('aliases_count', $response->json()['data'][0]);
+    }
+
+    #[Test]
+    public function recipient_show_omits_alias_count_when_filter_alias_count_is_false()
+    {
+        $recipient = Recipient::factory()->create(['user_id' => $this->user->id]);
+
+        $response = $this->json('GET', '/api/v1/recipients/'.$recipient->id.'?filter[alias_count]=false');
+
+        $response->assertSuccessful();
+        $this->assertArrayNotHasKey('aliases_count', $response->json()['data']);
     }
 
     #[Test]

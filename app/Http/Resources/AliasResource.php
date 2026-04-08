@@ -18,6 +18,7 @@ class AliasResource extends JsonResource
             'domain' => $this->domain,
             'email' => $this->email,
             'active' => $this->active,
+            'pinned' => $this->pinned,
             'description' => $this->description,
             'from_name' => $this->from_name,
             'attached_recipients_only' => $this->attached_recipients_only,

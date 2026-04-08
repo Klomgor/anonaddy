@@ -119,6 +119,73 @@
           tabindex="-1"
           ><span class="bg-red-400 h-2 w-2 rounded-full"></span
         ></span>
+        <Listbox as="div" v-model="selectedPinnedFilter" class="ml-1">
+          <div class="relative">
+            <ListboxButton
+              class="inline-flex items-center text-sm rounded px-2 py-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 text-grey-700 hover:text-grey-900 dark:text-grey-200 dark:hover:text-grey-300"
+            >
+              <span class="sr-only">Pin filter</span>
+              <span>{{ selectedPinnedFilter.label }} </span>
+              <ChevronDownIcon
+                class="ml-1 h-4 w-4 text-grey-500 dark:text-grey-400"
+                aria-hidden="true"
+              />
+              <span
+                class="ml-1 outline-none inline-flex items-center"
+                :class="
+                  selectedPinnedFilter.value === 'unpinned'
+                    ? 'text-grey-500 dark:text-grey-400'
+                    : 'text-yellow-500 dark:text-yellow-400'
+                "
+                aria-hidden="true"
+              >
+                <icon
+                  name="pin"
+                  class="inline-block w-4 h-4"
+                  :class="
+                    selectedPinnedFilter.value === 'unpinned' ? 'stroke-current' : 'fill-current'
+                  "
+                />
+              </span>
+            </ListboxButton>
+            <transition
+              leave-active-class="transition ease-in duration-100"
+              leave-from-class="opacity-100"
+              leave-to-class="opacity-0"
+            >
+              <ListboxOptions
+                class="absolute right-0 left-auto z-20 mt-1 w-40 origin-top-right overflow-hidden rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none dark:bg-grey-900"
+              >
+                <ListboxOption
+                  as="template"
+                  v-for="option in pinnedFilterOptions"
+                  :key="option.value"
+                  :value="option"
+                  v-slot="{ active, selected }"
+                >
+                  <li
+                    :class="[
+                      active ? 'text-white bg-indigo-500' : 'text-grey-900 dark:text-grey-100',
+                      'cursor-pointer select-none p-2 text-sm',
+                    ]"
+                  >
+                    <div class="flex justify-between items-center">
+                      <span :class="selected ? 'font-semibold' : 'font-normal'">
+                        {{ option.label }}
+                      </span>
+                      <CheckIcon
+                        v-if="selected"
+                        :class="active ? 'text-white' : 'text-indigo-500 dark:text-grey-100'"
+                        class="h-5 w-5"
+                        aria-hidden="true"
+                      />
+                    </div>
+                  </li>
+                </ListboxOption>
+              </ListboxOptions>
+            </transition>
+          </div>
+        </Listbox>
       </div>
       <div class="flex py-4 px-4 sm:px-6 lg:px-8">
         <div class="flex items-center">
@@ -220,6 +287,22 @@
           </button>
           <button
             type="button"
+            class="inline-flex items-center rounded border border-grey-300 bg-white px-2.5 py-1.5 text-xs font-medium text-grey-700 shadow-sm hover:bg-grey-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-30 dark:border-grey-600 dark:bg-grey-800 dark:text-grey-200 dark:hover:bg-grey-700"
+            :disabled="disabledBulkPin() || bulkPinAliasLoading"
+            @click="selectedRows.length === 1 ? pinAlias(selectedRows[0]) : bulkPinAlias()"
+          >
+            Pin <loader v-if="bulkPinAliasLoading" />
+          </button>
+          <button
+            type="button"
+            class="inline-flex items-center rounded border border-grey-300 bg-white px-2.5 py-1.5 text-xs font-medium text-grey-700 shadow-sm hover:bg-grey-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-30 dark:border-grey-600 dark:bg-grey-800 dark:text-grey-200 dark:hover:bg-grey-700"
+            :disabled="disabledBulkUnpin() || bulkUnpinAliasLoading"
+            @click="selectedRows.length === 1 ? unpinAlias(selectedRows[0]) : bulkUnpinAlias()"
+          >
+            Unpin <loader v-if="bulkUnpinAliasLoading" />
+          </button>
+          <button
+            type="button"
             class="inline-flex items-center rounded border border-grey-300 bg-white px-2.5 py-1.5 text-xs font-medium text-grey-700 shadow-sm hover:bg-grey-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-30 dark:border-grey-600 dark:bg-grey-800 dark:text-grey-200 dark:hover:bg-grey-700 whitespace-nowrap"
             :disabled="bulkEditAliasRecipientsLoading"
             @click="
@@ -296,7 +379,7 @@
               <div
                 v-else
                 type="checkbox"
-                class="h-4 w-4 rounded border-grey-300 bg-grey-100 text-indigo-600 focus:ring-indigo-500 sm:left-6 tooltip cursor-not-allowed dark:bg-grey-900"
+                class="h-4 w-4 rounded border-grey-300 bg-grey-100 border text-indigo-600 focus:ring-indigo-500 sm:left-6 tooltip cursor-not-allowed dark:bg-grey-800"
                 data-tippy-content="'Select All' is only available when the page size is 25"
               ></div>
             </span>
@@ -353,25 +436,35 @@
               </span>
             </span>
             <span v-else-if="props.column.field == 'email'" class="block">
-              <button
-                class="text-grey-400 tooltip outline-none text-left"
-                data-tippy-content="Click to copy"
-                @click="clipboard(getAliasEmail(rows[props.row.originalIndex]))"
-              >
-                <span class="font-semibold text-indigo-800 dark:text-indigo-400">{{
-                  $filters.truncate(getAliasLocalPart(props.row), 60)
-                }}</span
-                ><span
-                  v-if="getAliasLocalPart(props.row).length <= 60"
-                  class="font-semibold text-grey-500 dark:text-grey-200"
-                  >{{
-                    $filters.truncate(
-                      '@' + props.row.domain,
-                      60 - getAliasLocalPart(props.row).length,
-                    )
-                  }}</span
+              <div class="flex items-center">
+                <span
+                  v-if="props.row.pinned"
+                  class="mr-1 tooltip outline-none inline-flex items-center text-yellow-500 dark:text-yellow-400 cursor-default"
+                  data-tippy-content="Pinned"
+                  aria-hidden="true"
                 >
-              </button>
+                  <icon name="pin" class="inline-block w-4 h-4 fill-current" />
+                </span>
+                <button
+                  class="text-grey-400 tooltip outline-none"
+                  data-tippy-content="Click to copy"
+                  @click="clipboard(getAliasEmail(rows[props.row.originalIndex]))"
+                >
+                  <span class="font-semibold text-indigo-800 dark:text-indigo-400">{{
+                    $filters.truncate(getAliasLocalPart(props.row), 60)
+                  }}</span
+                  ><span
+                    v-if="getAliasLocalPart(props.row).length <= 60"
+                    class="font-semibold text-grey-500 dark:text-grey-200"
+                    >{{
+                      $filters.truncate(
+                        '@' + props.row.domain,
+                        60 - getAliasLocalPart(props.row).length,
+                      )
+                    }}</span
+                  >
+                </button>
+              </div>
               <div v-if="aliasIdToEdit === props.row.id" class="flex items-center">
                 <input
                   @keyup.enter="editAliasDescription(rows[props.row.originalIndex])"
@@ -1462,6 +1555,10 @@ const props = defineProps({
     type: Array,
     required: true,
   },
+  pinnedFilter: {
+    type: String,
+    default: null,
+  },
 })
 
 const rows = ref(props.initialRows.data)
@@ -1521,6 +1618,8 @@ const tippyInstance = ref(null)
 const errors = ref({})
 const bulkActivateAliasLoading = ref(false)
 const bulkDeactivateAliasLoading = ref(false)
+const bulkPinAliasLoading = ref(false)
+const bulkUnpinAliasLoading = ref(false)
 const bulkEditAliasRecipientsLoading = ref(false)
 const bulkEditAliasRecipientsModalOpen = ref(false)
 const bulkDeleteAliasLoading = ref(false)
@@ -1579,6 +1678,17 @@ const displayOptions = [
 ]
 
 const showAliasStatus = ref(_.find(displayOptions, ['value', props.currentAliasStatus]))
+
+const pinnedFilterOptions = [
+  { value: 'all', label: 'All' },
+  { value: 'pinned', label: 'Pinned' },
+  { value: 'unpinned', label: 'Unpinned' },
+]
+const getPinnedFilterOption = pinnedFilter => {
+  const value = pinnedFilter == null ? 'all' : pinnedFilter === 'true' ? 'pinned' : 'unpinned'
+  return _.find(pinnedFilterOptions, ['value', value]) ?? pinnedFilterOptions[0]
+}
+const selectedPinnedFilter = ref(getPinnedFilterOption(props.pinnedFilter))
 
 const sortOptions = [
   {
@@ -1721,7 +1831,14 @@ watch(
     let params = Object.assign(route().params, status.value.params)
 
     router.visit(route('aliases.index', _.omit(params, status.value.omit)), {
-      only: ['initialRows', 'search', 'sort', 'sortDirection', 'currentAliasStatus'],
+      only: [
+        'initialRows',
+        'search',
+        'sort',
+        'sortDirection',
+        'currentAliasStatus',
+        'pinnedFilter',
+      ],
     })
   },
   { deep: true },
@@ -1735,8 +1852,40 @@ watch(
     })
 
     router.visit(route('aliases.index', _.omit(params, ['page'])), {
-      only: ['initialRows', 'search', 'sort', 'sortDirection', 'currentAliasStatus'],
+      only: [
+        'initialRows',
+        'search',
+        'sort',
+        'sortDirection',
+        'currentAliasStatus',
+        'pinnedFilter',
+      ],
     })
+  },
+  { deep: true },
+)
+
+const applyPinnedFilter = value => {
+  const params = { ...route().params }
+  params.pinned = value === 'all' ? 'all' : value === 'pinned' ? 'true' : 'false'
+  router.visit(route('aliases.index', params), {
+    only: ['initialRows', 'search', 'sort', 'sortDirection', 'currentAliasStatus', 'pinnedFilter'],
+  })
+}
+watch(
+  () => props.pinnedFilter,
+  val => {
+    selectedPinnedFilter.value = getPinnedFilterOption(val)
+  },
+)
+watch(
+  selectedPinnedFilter,
+  (newOpt, oldOpt) => {
+    if (!oldOpt || newOpt.value === oldOpt.value) return
+    const currentValue =
+      props.pinnedFilter == null ? 'all' : props.pinnedFilter === 'true' ? 'pinned' : 'unpinned'
+    if (newOpt.value === currentValue) return
+    applyPinnedFilter(newOpt.value)
   },
   { deep: true },
 )
@@ -1776,7 +1925,14 @@ const createNewAlias = () => {
     .then(({ data }) => {
       // Show active/inactive
       router.reload({
-        only: ['initialRows', 'search', 'currentAliasStatus', 'sort', 'sortDirection'],
+        only: [
+          'initialRows',
+          'search',
+          'currentAliasStatus',
+          'sort',
+          'sortDirection',
+          'pinnedFilter',
+        ],
         onSuccess: page => {
           rows.value = page.props.initialRows.data
           createAliasLoading.value = false
@@ -2025,6 +2181,156 @@ const bulkDeactivateAlias = () => {
     })
 }
 
+const pinAlias = alias => {
+  bulkPinAliasLoading.value = true
+
+  axios
+    .post('/api/v1/pinned-aliases', JSON.stringify({ id: alias.id }), {
+      headers: { 'Content-Type': 'application/json' },
+    })
+    .then(() => {
+      router.reload({
+        only: [
+          'initialRows',
+          'search',
+          'currentAliasStatus',
+          'sort',
+          'sortDirection',
+          'pinnedFilter',
+        ],
+        onSuccess: page => {
+          bulkPinAliasLoading.value = false
+          selectedRowIds.value = []
+          rows.value = props.initialRows.data
+          debounceToolips()
+          successMessage('Alias pinned')
+        },
+      })
+    })
+    .catch(error => {
+      bulkPinAliasLoading.value = false
+      if (error.response !== undefined) {
+        errorMessage(error.response.data)
+      } else {
+        errorMessage()
+      }
+    })
+}
+
+const bulkPinAlias = () => {
+  bulkPinAliasLoading.value = true
+  let selectedAliasesToPin = _.filter(selectedRows.value, r => !r.pinned)
+
+  axios
+    .post(
+      '/api/v1/aliases/pin/bulk',
+      JSON.stringify({ ids: selectedAliasesToPin.map(a => a.id) }),
+      { headers: { 'Content-Type': 'application/json' } },
+    )
+    .then(response => {
+      router.reload({
+        only: [
+          'initialRows',
+          'search',
+          'currentAliasStatus',
+          'sort',
+          'sortDirection',
+          'pinnedFilter',
+        ],
+        onSuccess: page => {
+          bulkPinAliasLoading.value = false
+          selectedRowIds.value = []
+          rows.value = props.initialRows.data
+          debounceToolips()
+          successMessage(response.data.message)
+        },
+      })
+    })
+    .catch(error => {
+      bulkPinAliasLoading.value = false
+      if (error.response?.status === 429) {
+        errorMessage('Too many bulk requests, please wait a little while before trying again')
+      } else if (error.response?.data?.message !== undefined) {
+        errorMessage(error.response.data.message)
+      } else {
+        errorMessage()
+      }
+    })
+}
+
+const unpinAlias = alias => {
+  bulkUnpinAliasLoading.value = true
+
+  axios
+    .delete(`/api/v1/pinned-aliases/${alias.id}`)
+    .then(() => {
+      router.reload({
+        only: [
+          'initialRows',
+          'search',
+          'currentAliasStatus',
+          'sort',
+          'sortDirection',
+          'pinnedFilter',
+        ],
+        onSuccess: page => {
+          bulkUnpinAliasLoading.value = false
+          selectedRowIds.value = []
+          rows.value = props.initialRows.data
+          successMessage('Alias unpinned')
+        },
+      })
+    })
+    .catch(error => {
+      bulkUnpinAliasLoading.value = false
+      if (error.response !== undefined) {
+        errorMessage(error.response.data)
+      } else {
+        errorMessage()
+      }
+    })
+}
+
+const bulkUnpinAlias = () => {
+  bulkUnpinAliasLoading.value = true
+  let selectedAliasesToUnpin = _.filter(selectedRows.value, 'pinned')
+
+  axios
+    .post(
+      '/api/v1/aliases/unpin/bulk',
+      JSON.stringify({ ids: selectedAliasesToUnpin.map(a => a.id) }),
+      { headers: { 'Content-Type': 'application/json' } },
+    )
+    .then(response => {
+      router.reload({
+        only: [
+          'initialRows',
+          'search',
+          'currentAliasStatus',
+          'sort',
+          'sortDirection',
+          'pinnedFilter',
+        ],
+        onSuccess: page => {
+          bulkUnpinAliasLoading.value = false
+          selectedRowIds.value = []
+          rows.value = props.initialRows.data
+          successMessage(response.data.message)
+        },
+      })
+    })
+    .catch(error => {
+      bulkUnpinAliasLoading.value = false
+      if (error.response?.status === 429) {
+        errorMessage('Too many bulk requests, please wait a little while before trying again')
+      } else if (error.response?.data?.message !== undefined) {
+        errorMessage(error.response.data.message)
+      } else {
+        errorMessage()
+      }
+    })
+}
+
 const deleteAlias = id => {
   deleteAliasLoading.value = true
 
@@ -2046,7 +2352,14 @@ const deleteAlias = id => {
         successMessage('Alias deleted successfully')
       } else {
         router.reload({
-          only: ['initialRows', 'search', 'currentAliasStatus', 'sort', 'sortDirection'],
+          only: [
+            'initialRows',
+            'search',
+            'currentAliasStatus',
+            'sort',
+            'sortDirection',
+            'pinnedFilter',
+          ],
           onSuccess: page => {
             deleteAliasModalOpen.value = false
             deleteAliasLoading.value = false
@@ -2092,7 +2405,14 @@ const bulkDeleteAlias = () => {
         successMessage(response.data.message)
       } else {
         router.reload({
-          only: ['initialRows', 'search', 'currentAliasStatus', 'sort', 'sortDirection'],
+          only: [
+            'initialRows',
+            'search',
+            'currentAliasStatus',
+            'sort',
+            'sortDirection',
+            'pinnedFilter',
+          ],
           onSuccess: page => {
             bulkDeleteAliasLoading.value = false
             bulkDeleteAliasModalOpen.value = false
@@ -2123,7 +2443,14 @@ const forgetAlias = id => {
     .delete(`/api/v1/aliases/${id}/forget`)
     .then(response => {
       router.reload({
-        only: ['initialRows', 'search', 'currentAliasStatus', 'sort', 'sortDirection'],
+        only: [
+          'initialRows',
+          'search',
+          'currentAliasStatus',
+          'sort',
+          'sortDirection',
+          'pinnedFilter',
+        ],
         onSuccess: page => {
           forgetAliasModalOpen.value = false
           forgetAliasLoading.value = false
@@ -2157,7 +2484,14 @@ const bulkForgetAlias = () => {
     )
     .then(response => {
       router.reload({
-        only: ['initialRows', 'search', 'currentAliasStatus', 'sort', 'sortDirection'],
+        only: [
+          'initialRows',
+          'search',
+          'currentAliasStatus',
+          'sort',
+          'sortDirection',
+          'pinnedFilter',
+        ],
         onSuccess: page => {
           bulkForgetAliasLoading.value = false
           bulkForgetAliasModalOpen.value = false
@@ -2191,7 +2525,14 @@ const restoreAlias = id => {
       // If showing only deleted then reload all aliases
       if (props.currentAliasStatus === 'deleted') {
         router.reload({
-          only: ['initialRows', 'search', 'currentAliasStatus', 'sort', 'sortDirection'],
+          only: [
+            'initialRows',
+            'search',
+            'currentAliasStatus',
+            'sort',
+            'sortDirection',
+            'pinnedFilter',
+          ],
           onSuccess: page => {
             restoreAliasModalOpen.value = false
             restoreAliasLoading.value = false
@@ -2235,7 +2576,14 @@ const bulkRestoreAlias = () => {
       // If showing only deleted then reload all aliases
       if (props.currentAliasStatus === 'deleted') {
         router.reload({
-          only: ['initialRows', 'search', 'currentAliasStatus', 'sort', 'sortDirection'],
+          only: [
+            'initialRows',
+            'search',
+            'currentAliasStatus',
+            'sort',
+            'sortDirection',
+            'pinnedFilter',
+          ],
           onSuccess: page => {
             bulkRestoreAliasLoading.value = false
             bulkRestoreAliasModalOpen.value = false
@@ -2276,7 +2624,7 @@ const changeSortDir = () => {
   })
 
   router.visit(route(route().current(), _.omit(params, ['page'])), {
-    only: ['initialRows', 'search', 'currentAliasStatus', 'sort', 'sortDirection'],
+    only: ['initialRows', 'search', 'currentAliasStatus', 'sort', 'sortDirection', 'pinnedFilter'],
     onSuccess: page => {
       changeSortDirLoading.value = false
     },
@@ -2300,6 +2648,7 @@ const updatePageSize = () => {
       'sortDirection',
       'currentAliasStatus',
       'initialPageSize',
+      'pinnedFilter',
     ],
     onSuccess: page => {
       updatePageSizeLoading.value = false
@@ -2468,6 +2817,14 @@ const disabledBulkActivate = () => {
 
 const disabledBulkDeactivate = () => {
   return !_.find(selectedRows.value, 'active')
+}
+
+const disabledBulkPin = () => {
+  return !_.find(selectedRows.value, r => !r.pinned)
+}
+
+const disabledBulkUnpin = () => {
+  return !_.find(selectedRows.value, 'pinned')
 }
 
 const disabledBulkDelete = () => {

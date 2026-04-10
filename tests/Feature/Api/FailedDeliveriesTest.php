@@ -53,6 +53,56 @@ class FailedDeliveriesTest extends TestCase
     }
 
     #[Test]
+    public function user_can_filter_failed_deliveries_by_inbound_type()
+    {
+        FailedDelivery::factory()->count(2)->create([
+            'user_id' => $this->user->id,
+            'email_type' => 'IR',
+        ]);
+        FailedDelivery::factory()->create([
+            'user_id' => $this->user->id,
+            'email_type' => 'F',
+        ]);
+
+        $response = $this->json('GET', '/api/v1/failed-deliveries?filter[email_type]=inbound');
+
+        $response->assertSuccessful();
+        $this->assertCount(2, $response->json()['data']);
+    }
+
+    #[Test]
+    public function user_can_filter_failed_deliveries_by_outbound_type()
+    {
+        FailedDelivery::factory()->count(2)->create([
+            'user_id' => $this->user->id,
+            'email_type' => 'IR',
+        ]);
+        FailedDelivery::factory()->create([
+            'user_id' => $this->user->id,
+            'email_type' => 'F',
+        ]);
+
+        $response = $this->json('GET', '/api/v1/failed-deliveries?filter[email_type]=outbound');
+
+        $response->assertSuccessful();
+        $this->assertCount(1, $response->json()['data']);
+    }
+
+    #[Test]
+    public function user_can_paginate_failed_deliveries()
+    {
+        FailedDelivery::factory()->count(3)->create([
+            'user_id' => $this->user->id,
+        ]);
+
+        $response = $this->json('GET', '/api/v1/failed-deliveries?page[size]=2&page[number]=1');
+
+        $response->assertSuccessful();
+        $this->assertCount(2, $response->json()['data']);
+        $this->assertEquals(3, $response->json()['meta']['total']);
+    }
+
+    #[Test]
     public function user_can_delete_failed_delivery()
     {
         $failedDelivery = FailedDelivery::factory()->create([

@@ -446,7 +446,7 @@
                   <icon name="pin" class="inline-block w-4 h-4 fill-current" />
                 </span>
                 <button
-                  class="text-grey-400 tooltip outline-none"
+                  class="text-grey-400 tooltip outline-none text-left"
                   data-tippy-content="Click to copy"
                   @click="clipboard(getAliasEmail(rows[props.row.originalIndex]))"
                 >

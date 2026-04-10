@@ -3,7 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Alias;
-use App\Notifications\AliasDeletedByUnsubscribeNotification;
+use App\Notifications\AliasDeactivatedByUnsubscribeNotification;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Routing\Middleware\ThrottleRequestsWithRedis;
 use Illuminate\Support\Facades\Cache;
@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\URL;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
-class DeleteAliasOneClickTest extends TestCase
+class DeactivateAliasOneClickTest extends TestCase
 {
     use LazilyRefreshDatabase;
 
@@ -20,12 +20,11 @@ class DeleteAliasOneClickTest extends TestCase
     {
         parent::setUp();
 
-        // One-Click routes are rate-limited; disable throttling so assertions stay deterministic.
         $this->withoutMiddleware(ThrottleRequestsWithRedis::class);
     }
 
     #[Test]
-    public function signed_post_deletes_alias_and_sends_notification()
+    public function signed_post_deactivates_alias_and_sends_notification()
     {
         Notification::fake();
 
@@ -36,23 +35,18 @@ class DeleteAliasOneClickTest extends TestCase
             'active' => true,
         ]);
 
-        $this->assertNull($alias->deleted_at);
-
-        $url = URL::signedRoute('delete_post', ['alias' => $alias->id]);
+        $url = URL::signedRoute('deactivate_post', ['alias' => $alias->id]);
 
         $response = $this->post($url);
 
         $response->assertStatus(200);
-        $response->assertSee('');
+        $this->assertFalse($alias->refresh()->active);
 
-        $alias->refresh();
-        $this->assertNotNull($alias->deleted_at);
-
-        Notification::assertSentTo($user, AliasDeletedByUnsubscribeNotification::class);
+        Notification::assertSentTo($user, AliasDeactivatedByUnsubscribeNotification::class);
     }
 
     #[Test]
-    public function already_deleted_alias_returns_404_and_does_not_send_notification()
+    public function already_inactive_alias_does_not_send_notification()
     {
         Notification::fake();
 
@@ -60,16 +54,17 @@ class DeleteAliasOneClickTest extends TestCase
 
         $alias = Alias::factory()->create([
             'user_id' => $user->id,
-            'deleted_at' => now(),
+            'active' => false,
         ]);
 
-        $url = URL::signedRoute('delete_post', ['alias' => $alias->id]);
+        $url = URL::signedRoute('deactivate_post', ['alias' => $alias->id]);
 
         $response = $this->post($url);
 
-        $response->assertStatus(404);
+        $response->assertStatus(200);
+        $this->assertFalse($alias->refresh()->active);
 
-        Notification::assertNotSentTo($user, AliasDeletedByUnsubscribeNotification::class);
+        Notification::assertNotSentTo($user, AliasDeactivatedByUnsubscribeNotification::class);
     }
 
     #[Test]
@@ -84,35 +79,38 @@ class DeleteAliasOneClickTest extends TestCase
             'active' => true,
         ]);
 
-        $url = URL::signedRoute('delete_post', ['alias' => $alias->id]);
+        $url = URL::signedRoute('deactivate_post', ['alias' => $alias->id]);
 
         $this->post($url);
-        $this->assertNotNull($alias->refresh()->deleted_at);
+        $this->assertFalse($alias->refresh()->active);
 
-        $alias->restore();
+        $alias->update(['active' => true]);
         $this->post($url);
 
-        Notification::assertSentToTimes($user, AliasDeletedByUnsubscribeNotification::class, 1);
-        $this->assertTrue(Cache::has("unsubscribe-delete-notify:{$alias->id}"));
+        Notification::assertSentToTimes($user, AliasDeactivatedByUnsubscribeNotification::class, 1);
+        $this->assertTrue(Cache::has("unsubscribe-deactivate-notify:{$alias->id}"));
     }
 
     #[Test]
     public function invalid_signature_returns_403()
     {
         $user = $this->createUser('johndoe');
-        $alias = Alias::factory()->create(['user_id' => $user->id]);
 
-        $response = $this->post(route('delete_post', ['alias' => $alias->id]));
+        $alias = Alias::factory()->create([
+            'user_id' => $user->id,
+            'active' => true,
+        ]);
+
+        $response = $this->post(route('deactivate_post', ['alias' => $alias->id]));
 
         $response->assertStatus(403);
-
-        $this->assertNull($alias->fresh()->deleted_at);
+        $this->assertTrue($alias->refresh()->active);
     }
 
     #[Test]
     public function non_existent_alias_returns_404()
     {
-        $url = URL::signedRoute('delete_post', ['alias' => '00000000-0000-0000-0000-000000000000']);
+        $url = URL::signedRoute('deactivate_post', ['alias' => '00000000-0000-0000-0000-000000000000']);
 
         $response = $this->post($url);
 

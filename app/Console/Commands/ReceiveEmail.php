@@ -403,10 +403,9 @@ class ReceiveEmail extends Command
             $forwardToRecipientIds = UserRuleChecker::getRecipientIdsToForwardToFromRuleIdsAndActions($ruleIdsAndActions);
 
             if (! empty($forwardToRecipientIds)) {
-                $recipients = $this->user->verifiedRecipients()->whereIn('id', $forwardToRecipientIds)->get();
-
-                if ($recipients) {
-                    $recipientsToForwardTo = $this->user->verifiedRecipients()->whereIn('id', $forwardToRecipientIds)->get();
+                $ruleRecipients = $this->user->verifiedRecipients()->whereIn('id', $forwardToRecipientIds)->get();
+                if ($ruleRecipients->isNotEmpty()) {
+                    $recipientsToForwardTo = $ruleRecipients;
                 }
             }
         }

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Alias;
 use App\Models\EmailData;
+use App\Models\Rule;
 use App\Models\User;
 use Illuminate\Support\Str;
 
@@ -34,6 +35,7 @@ class UserRuleChecker
     protected function getRuleIdsAndActions(string $emailType): array
     {
         $ruleIdsAndActions = [];
+        $matchedRuleIds = [];
 
         $method = "activeRulesFor{$emailType}Ordered";
         $rules = $this->user->{$method};
@@ -43,9 +45,12 @@ class UserRuleChecker
             if ($this->ruleConditionsSatisfied($rule->conditions, $rule->operator)) {
                 $ruleIdsAndActions[$rule->id] = $rule->actions;
 
-                // Increment applied count
-                $rule->increment('applied', 1, ['last_applied' => now()]);
+                $matchedRuleIds[] = $rule->id;
             }
+        }
+
+        if (! empty($matchedRuleIds)) {
+            Rule::whereIn('id', $matchedRuleIds)->increment('applied', 1, ['last_applied' => now()]);
         }
 
         return $ruleIdsAndActions;

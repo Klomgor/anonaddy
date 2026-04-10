@@ -19,6 +19,7 @@ Schedule::command('anonaddy:check-domains-mx-validation')->daily();
 Schedule::command('anonaddy:clear-failed-deliveries')->daily();
 Schedule::command('anonaddy:clear-outbound-messages')->everySixHours();
 Schedule::command('anonaddy:email-users-with-token-expiring-soon')->daily();
+Schedule::command('anonaddy:parse-postfix-mail-log')->everyFiveMinutes();
 Schedule::command('auth:clear-resets')->daily();
 Schedule::command('sanctum:prune-expired --hours=168')->daily();
 Schedule::command('cache:prune-stale-tags')->hourly();

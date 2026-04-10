@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Api;
 
+use App\Models\Alias;
 use App\Models\Domain;
 use App\Models\Recipient;
 use App\Notifications\CustomVerifyEmail;
@@ -64,6 +65,24 @@ class RecipientsTest extends TestCase
 
         $response->assertSuccessful();
         $this->assertArrayNotHasKey('aliases_count', $response->json()['data'][0]);
+    }
+
+    #[Test]
+    public function recipients_index_alias_count_excludes_soft_deleted_aliases(): void
+    {
+        $recipient = Recipient::factory()->create(['user_id' => $this->user->id]);
+        $activeAlias = Alias::factory()->create(['user_id' => $this->user->id]);
+        $deletedAlias = Alias::factory()->create(['user_id' => $this->user->id]);
+        $activeAlias->recipients()->attach($recipient->id);
+        $deletedAlias->recipients()->attach($recipient->id);
+        $deletedAlias->delete();
+
+        $response = $this->json('GET', '/api/v1/recipients');
+
+        $response->assertSuccessful();
+        $row = collect($response->json('data'))->firstWhere('id', $recipient->id);
+        $this->assertNotNull($row);
+        $this->assertSame(1, (int) $row['aliases_count']);
     }
 
     #[Test]

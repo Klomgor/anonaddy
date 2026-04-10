@@ -7,7 +7,7 @@ use Illuminate\Contracts\Validation\ValidationRule;
 
 class VerifiedRecipientId implements ValidationRule
 {
-    protected $verifiedRecipientIds;
+    protected ?array $verifiedRecipientIds;
 
     /**
      * Create a new rule instance.
@@ -16,14 +16,7 @@ class VerifiedRecipientId implements ValidationRule
      */
     public function __construct(?array $verifiedRecipientIds = null)
     {
-        if (! is_null($verifiedRecipientIds)) {
-            $this->verifiedRecipientIds = $verifiedRecipientIds;
-        } else {
-            $this->verifiedRecipientIds = user()
-                ->verifiedRecipients()
-                ->pluck('id')
-                ->toArray();
-        }
+        $this->verifiedRecipientIds = $verifiedRecipientIds;
     }
 
     /**
@@ -31,6 +24,13 @@ class VerifiedRecipientId implements ValidationRule
      */
     public function validate(string $attribute, mixed $ids, Closure $fail): void
     {
+        if (is_null($this->verifiedRecipientIds)) {
+            $this->verifiedRecipientIds = user()
+                ->verifiedRecipients()
+                ->pluck('id')
+                ->toArray();
+        }
+
         // Multiple calls to $fail simply add more validation errors, they don't stop processing.
         if (! is_array($ids)) {
             $fail('Invalid Recipient');

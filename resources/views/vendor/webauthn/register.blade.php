@@ -32,7 +32,10 @@
                         <br />
                         {{ trans('webauthn::messages.noButtonAdvise') }}
                         <br />
-                        You can also add a Passkey here.
+                        You can register a hardware security key (e.g. YubiKey, SoloKey,
+                        Nitrokey), a device authenticator (e.g. Touch ID, Face ID, Windows
+                        Hello, Android biometrics), or a passkey stored in a password manager
+                        (e.g. 1Password, Bitwarden, iCloud Keychain).
                     </p>
 
                     <form method="POST" onsubmit="registerDevice();return false"  class="mt-8" action="{{ route('webauthn.store') }}" id="form">
@@ -46,7 +49,7 @@
                         <label for="name" class="block text-grey-700 text-sm mb-2">
                             Name:
                         </label>
-                        <input type="text" class="appearance-none bg-grey-100 rounded w-full p-3 text-grey-700 focus:ring" name="name" id="name" placeholder="Yubikey" autocomplete="off" required autofocus>
+                        <input type="text" class="appearance-none bg-grey-100 rounded w-full p-3 text-grey-700 focus:ring" name="name" id="name" placeholder="e.g. MacBook Touch ID, 1Password, YubiKey" autocomplete="off" required autofocus>
 
                         @if ($errors->has('name'))
                             <p class="text-red-500 text-xs italic mt-4">

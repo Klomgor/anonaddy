@@ -586,8 +586,10 @@
             Enable Device/Passkey Authentication (WebAuthn)
           </h3>
           <p class="text-base text-grey-700 dark:text-grey-200">
-            WebAuthn is a new W3C global standard for secure authentication. You can use any
-            hardware key such as a Yubikey, Solokey, NitroKey etc.
+            WebAuthn is a W3C global standard for secure authentication. You can register a hardware
+            security key (e.g. YubiKey, SoloKey, Nitrokey), a built-in device authenticator (e.g.
+            Touch ID, Face ID, Windows Hello, Android biometrics), or a passkey stored in a password
+            manager (e.g. 1Password, Bitwarden, iCloud Keychain).
           </p>
         </div>
         <div class="mt-4">

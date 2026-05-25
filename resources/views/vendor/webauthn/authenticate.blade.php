@@ -8,7 +8,7 @@
                 <div class="px-6 py-8 md:p-10">
 
                     <h1 class="text-center font-bold text-2xl">
-                        {{ trans('webauthn::messages.auth.title') }}
+                        Sign in with a key or passkey
                     </h1>
 
                     <div class="mx-auto my-6 w-24 border-b-2 border-grey-200"></div>
@@ -19,21 +19,31 @@
                         {{ trans('webauthn::messages.success') }}
                     </div>
 
-                    <h3>
-                        {{ trans('webauthn::messages.insertKey') }}
-                    </h3>
-
-                    <p class="my-4 text-center">
-                        <img src="/webauthn.png" alt="security key"/>
+                    <p class="text-grey-700">
+                        Press <b>Authenticate</b> below. Your browser will prompt you to use one of
+                        your registered credentials:
                     </p>
 
-                    <p>
-                        {{ trans('webauthn::messages.buttonAdvise') }}
-                        <br />
-                        {{ trans('webauthn::messages.noButtonAdvise') }}
-                        <br />
-                        If nothing happens then click the button below to authenticate.
-                    </p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 my-6">
+                        <div class="border border-grey-200 rounded-lg p-4 flex flex-col items-center text-center bg-grey-50">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-10 w-10 text-indigo-700 mb-2" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 5.25a3 3 0 0 1 3 3m3 0a6 6 0 0 1-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1 1 21.75 8.25Z" />
+                            </svg>
+                            <div class="font-semibold text-grey-900">Hardware security key</div>
+                            <p class="text-sm text-grey-600 mt-1">
+                                Insert your YubiKey, SoloKey, Nitrokey, etc. and press its button when prompted.
+                            </p>
+                        </div>
+                        <div class="border border-grey-200 rounded-lg p-4 flex flex-col items-center text-center bg-grey-50">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-10 w-10 text-indigo-700 mb-2" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M7.864 4.243A7.5 7.5 0 0 1 19.5 10.5c0 2.92-.556 5.709-1.568 8.268M5.742 6.364A7.465 7.465 0 0 0 4.5 10.5a7.464 7.464 0 0 1-1.15 3.993m1.989 3.559A11.209 11.209 0 0 0 8.25 10.5a3.75 3.75 0 1 1 7.5 0c0 .527-.021 1.049-.064 1.565M12 10.5a14.94 14.94 0 0 1-3.6 9.75m6.633-4.596a18.666 18.666 0 0 1-2.485 5.33" />
+                            </svg>
+                            <div class="font-semibold text-grey-900">Passkey or device</div>
+                            <p class="text-sm text-grey-600 mt-1">
+                                Use Touch ID, Face ID, Windows Hello, or a passkey from 1Password, Bitwarden, iCloud Keychain, etc.
+                            </p>
+                        </div>
+                    </div>
 
                     <form method="POST" onsubmit="authenticateDevice();return false" action="{{ route('webauthn.auth') }}" id="form">
                         @csrf

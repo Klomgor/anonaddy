@@ -1,4 +1,3 @@
-const forms = require('@tailwindcss/forms')
 const svgToDataUri = require('mini-svg-data-uri')
 
 module.exports = {
@@ -130,6 +129,5 @@ module.exports = {
       }),
     },
   },
-  plugins: [forms],
   darkMode: 'selector',
 }

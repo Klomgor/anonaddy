@@ -1,9 +1,12 @@
 @import 'tailwindcss';
+@plugin "@tailwindcss/forms";
+
 @config '../../tailwind.config.js';
 
 @theme {
   --default-ring-width: 3px;
-  --default-ring-color: var(--color-blue-500);
+  /* Literal hex: custom palette in tailwind.config.js does not emit --color-* variables. */
+  --default-ring-color: #9aa5b1;
 }
 
 @utility container {

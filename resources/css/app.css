@@ -91,7 +91,7 @@
 
   /* Multiselect default syling start */
   .multiselect {
-    @apply relative mx-auto w-full flex items-center justify-end box-border cursor-pointer border border-grey-300 rounded bg-white text-base leading-snug outline-hidden;
+    @apply relative mx-auto w-full min-w-0 max-w-full flex items-center justify-end box-border cursor-pointer border border-grey-300 rounded-sm bg-white text-base leading-snug outline-hidden;
   }
   .dark .multiselect {
     @apply bg-white/5;
@@ -110,7 +110,7 @@
   }
 
   .multiselect-wrapper {
-    @apply relative mx-auto w-full flex items-center justify-end box-border cursor-pointer outline-hidden;
+    @apply relative mx-auto w-full min-w-0 max-w-full flex items-center justify-end box-border cursor-pointer outline-hidden;
   }
 
   .multiselect-single-label {
@@ -138,22 +138,22 @@
   }
 
   .multiselect-tags {
-    @apply grow shrink flex flex-wrap items-center mt-1 pl-2 rtl:pl-0 rtl:pr-2;
+    @apply grow shrink min-w-0 max-w-full flex flex-wrap items-center mt-1 pl-2 rtl:pl-0 rtl:pr-2;
   }
 
   .multiselect-tag {
-    @apply bg-indigo-100 text-indigo-900 text-sm font-semibold py-0.5 pl-2 rounded-sm mr-1 mb-1 flex items-center whitespace-nowrap rtl:pl-0 rtl:pr-2 rtl:mr-0 rtl:ml-1;
+    @apply bg-indigo-100 text-indigo-900 text-sm font-semibold py-0.5 pl-2 rounded-sm mr-1 mb-1 flex items-center min-w-0 max-w-full rtl:pl-0 rtl:pr-2 rtl:mr-0 rtl:ml-1;
   }
 
-  .dark .multiselect-tag {
-    @apply bg-indigo-100 text-indigo-900;
+  .multiselect-tag-wrapper {
+    @apply block min-w-0 truncate;
   }
   .multiselect-tag.is-disabled {
     @apply pr-2 opacity-50 rtl:pl-2;
   }
 
   .multiselect-tag-remove {
-    @apply flex items-center justify-center p-1 mx-0.5 rounded-sm hover:bg-black/10;
+    @apply flex shrink-0 items-center justify-center p-1 mx-0.5 rounded-xs hover:bg-black/10;
   }
 
   .multiselect-tag-remove-icon {

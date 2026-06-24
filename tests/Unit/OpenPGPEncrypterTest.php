@@ -39,6 +39,57 @@ OUTPUT;
     }
 
     #[Test]
+    public function it_throws_when_tilde_gnupg_home_cannot_be_resolved_without_home(): void
+    {
+        if (! function_exists('posix_getpwuid')) {
+            $this->markTestSkipped('posix extension is not available');
+        }
+
+        $encrypter = (new ReflectionClass(OpenPGPEncrypter::class))->newInstanceWithoutConstructor();
+
+        $resolveGnupgHome = new \ReflectionMethod(OpenPGPEncrypter::class, 'resolveGnupgHome');
+        $resolveGnupgHome->setAccessible(true);
+
+        $gnupgHome = new \ReflectionProperty(OpenPGPEncrypter::class, 'gnupgHome');
+        $gnupgHome->setAccessible(true);
+        $gnupgHome->setValue($encrypter, '~/.gnupg');
+
+        $originalHome = getenv('HOME');
+        $originalServerHome = $_SERVER['HOME'] ?? null;
+        putenv('HOME');
+        unset($_SERVER['HOME']);
+        config(['anonaddy.gnupg_home' => null]);
+
+        try {
+            $resolved = $resolveGnupgHome->invoke($encrypter);
+
+            $this->assertNotSame('/.gnupg', $resolved);
+            $this->assertStringEndsWith('/.gnupg', $resolved);
+        } finally {
+            if ($originalHome !== false) {
+                putenv('HOME='.$originalHome);
+            }
+            if ($originalServerHome !== null) {
+                $_SERVER['HOME'] = $originalServerHome;
+            }
+        }
+    }
+
+    #[Test]
+    public function it_throws_when_resolved_gnupg_home_is_invalid(): void
+    {
+        $encrypter = (new ReflectionClass(OpenPGPEncrypter::class))->newInstanceWithoutConstructor();
+
+        $guardResolvableGnupgHome = new \ReflectionMethod(OpenPGPEncrypter::class, 'guardResolvableGnupgHome');
+        $guardResolvableGnupgHome->setAccessible(true);
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('invalid path');
+
+        $guardResolvableGnupgHome->invoke($encrypter, '/.gnupg');
+    }
+
+    #[Test]
     public function it_reads_encryption_subkeys_from_an_armored_public_key(): void
     {
         if (! $this->gpgIsAvailable()) {

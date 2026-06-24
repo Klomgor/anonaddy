@@ -545,7 +545,7 @@ class ForwardEmail extends Mailable implements ShouldBeEncrypted, ShouldQueue
         $recipient = Recipient::find($this->recipientId);
 
         if ($recipient && $this->user->shouldReceiveFailedDeliveryNotification(false)) {
-            $recipient->notify(new FailedDeliveryNotification($this->alias->email, $this->sender, base64_decode($this->emailSubject), false, $this->user->store_failed_deliveries, $recipient->email, false, $this->authenticationResults, $failedDelivery?->remote_mta));
+            $recipient->notify(new FailedDeliveryNotification($this->alias->email, $this->sender, base64_decode($this->emailSubject), false, $this->user->store_failed_deliveries, $recipient->email, false, $this->authenticationResults, $failedDelivery?->remote_mta, $failedDelivery?->code));
         }
 
         if ($this->size > 0) {

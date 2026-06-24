@@ -316,7 +316,7 @@ class ReplyToEmail extends Mailable implements ShouldBeEncrypted, ShouldQueue
 
         // Send user failed delivery notification, add to failed deliveries table
         if ($this->user->shouldReceiveFailedDeliveryNotification(false)) {
-            $this->user->defaultRecipient->notify(new FailedDeliveryNotification($this->alias->email, $this->sender, base64_decode($this->emailSubject), false, $this->user->store_failed_deliveries, $this->recipient->email, false, null, $failedDelivery?->remote_mta));
+            $this->user->defaultRecipient->notify(new FailedDeliveryNotification($this->alias->email, $this->sender, base64_decode($this->emailSubject), false, $this->user->store_failed_deliveries, $this->recipient->email, false, null, $failedDelivery?->remote_mta, $failedDelivery?->code));
         }
 
         if ($this->size > 0) {

@@ -215,14 +215,6 @@ class OpenPGPEncrypter
             throw new RuntimeException('PHPMailerPGP requires the GnuPG class');
         }
 
-        if (! $this->gnupgHome && isset($_SERVER['HOME'])) {
-            $this->gnupgHome = $_SERVER['HOME'].'/.gnupg';
-        }
-
-        if (! $this->gnupgHome && getenv('HOME')) {
-            $this->gnupgHome = getenv('HOME').'/.gnupg';
-        }
-
         putenv('GNUPGHOME='.$this->resolveGnupgHome());
 
         if (! $this->gnupg) {
@@ -234,15 +226,56 @@ class OpenPGPEncrypter
 
     protected function resolveGnupgHome(): string
     {
-        $home = $this->gnupgHome ?? '';
+        $home = config('anonaddy.gnupg_home') ?: ($this->gnupgHome ?? '');
 
         if (Str::startsWith($home, '~')) {
-            $userHome = getenv('HOME') ?: ($_SERVER['HOME'] ?? '');
+            $resolved = $this->resolveUserHomeDirectory().substr($home, 1);
+            $this->guardResolvableGnupgHome($resolved);
 
-            return $userHome.substr($home, 1);
+            return $resolved;
+        }
+
+        if ($home === '') {
+            throw new RuntimeException(
+                'GnuPG home directory is not configured. Set ANONADDY_GNUPGHOME in .env or pass a homedir to OpenPGPEncrypter.'
+            );
+        }
+
+        $this->guardResolvableGnupgHome($home);
+
+        return $home;
+    }
+
+    protected function resolveUserHomeDirectory(): string
+    {
+        $home = getenv('HOME') ?: ($_SERVER['HOME'] ?? '');
+
+        if ($home === '' || $home === '/') {
+            if (function_exists('posix_getpwuid')) {
+                $passwd = posix_getpwuid(posix_geteuid());
+                $home = $passwd['dir'] ?? '';
+            }
+        }
+
+        if ($home === '' || $home === '/') {
+            throw new RuntimeException(
+                'GnuPG home directory cannot be resolved because HOME is not set for this process. '.
+                'Set ANONADDY_GNUPGHOME in .env to an absolute path such as /home/vagrant/.gnupg, '.
+                'or ensure queue workers export HOME.'
+            );
         }
 
         return $home;
+    }
+
+    protected function guardResolvableGnupgHome(string $path): void
+    {
+        if ($path === '/.gnupg' || str_starts_with($path, '/.gnupg/')) {
+            throw new RuntimeException(
+                'GnuPG home directory resolved to an invalid path ('.$path.'). '.
+                'Set ANONADDY_GNUPGHOME in .env to an absolute path such as /home/vagrant/.gnupg.'
+            );
+        }
     }
 
     /**

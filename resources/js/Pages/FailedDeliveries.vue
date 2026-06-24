@@ -114,7 +114,7 @@
               {{ getDeliveryTypeBadge(props.row).text }}
             </span>
           </span>
-          <span v-else-if="props.column.field == 'alias'">
+          <span v-else-if="props.column.field == 'alias'" class="block">
             <span
               class="tooltip cursor-pointer outline-hidden text-sm font-medium text-grey-700 dark:text-grey-200"
               data-tippy-content="Click to copy"
@@ -127,6 +127,12 @@
               "
               >{{ props.row.alias ? props.row.alias.email : '' }}</span
             >
+            <span
+              v-if="props.row.alias?.description"
+              class="block text-sm text-grey-400 dark:text-grey-300"
+            >
+              {{ $filters.truncate(props.row.alias.description, 60) }}
+            </span>
           </span>
           <span
             v-else-if="props.column.field == 'sender'"

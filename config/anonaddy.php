@@ -250,6 +250,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | GnuPG Home Directory
+    |--------------------------------------------------------------------------
+    |
+    | Directory containing the mailer signing key for OpenPGP encryption. Use an
+    | absolute path in production queue workers (HOME is often unset). Tilde paths
+    | require HOME to be set for the PHP/queue process.
+    |
+    */
+
+    'gnupg_home' => env('ANONADDY_GNUPGHOME'),
+
+    /*
+    |--------------------------------------------------------------------------
     | DKIM Signing Key Path
     |--------------------------------------------------------------------------
     |

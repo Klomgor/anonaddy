@@ -33,7 +33,7 @@ class GpgKeyExpired extends Notification implements ShouldBeEncrypted, ShouldQue
     public function toMail($notifiable)
     {
         return (new MailMessage)
-            ->subject('Your GPG key has expired on addy.io')
+            ->subject('GPG encryption failed on addy.io')
             ->markdown('mail.gpg_key_expired', [
                 'recipient' => $notifiable,
                 'userId' => $notifiable->user_id,

@@ -20,7 +20,7 @@ import Notifications from '@kyvg/vue3-notification'
 // Styles
 import 'tippy.js/dist/svg-arrow.css'
 import 'tippy.js/dist/tippy.css'
-import '@vueform/multiselect/themes/default.css'
+// Multiselect is styled in resources/css/app.css (do not import @vueform default theme - it overrides tag colours).
 
 const appName = window.document.getElementsByTagName('title')[0]?.innerText || 'addy.io'
 

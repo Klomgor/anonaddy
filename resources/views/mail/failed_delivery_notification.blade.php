@@ -32,7 +32,12 @@ Subject: **{{ $originalSubject }}**
 The subject of the message was: **{{ $originalSubject }}**
 
 @endif
+@if($failureReason)
+**Reason:**
 
+{{ $failureReason }}
+
+@endif
 @if($isStored)
 This email has been **temporarily stored**.
 

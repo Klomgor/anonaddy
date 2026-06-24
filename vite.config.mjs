@@ -52,6 +52,9 @@ export default defineConfig(({ command, mode }) => {
           'ziggy-js': resolve('vendor/tightenco/ziggy'),
       },
     },
+    optimizeDeps: {
+      exclude: ['@headlessui/vue'],
+    },
   }
 })
 

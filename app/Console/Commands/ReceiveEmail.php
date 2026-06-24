@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Helpers\CustomEmailValidator;
 use App\Mail\ForwardEmail;
 use App\Mail\ReplyToEmail;
 use App\Mail\SendFromEmail;
@@ -15,10 +16,7 @@ use App\Notifications\FailedDeliveryNotification;
 use App\Notifications\NearBandwidthLimit;
 use App\Notifications\SpamReplySendAttempt;
 use App\Services\UserRuleChecker;
-use Egulias\EmailValidator\EmailValidator;
-use Egulias\EmailValidator\Validation\RFCValidation;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -203,7 +201,7 @@ class ReceiveEmail extends Command
                 $destination = Str::replaceLast('=', '@', $this->inboundAlias['extension']);
                 $validEmailDestination = false;
 
-                if (App::environment('testing') ? filter_var($destination, FILTER_VALIDATE_EMAIL) : (new EmailValidator)->isValid($destination, new RFCValidation) || filter_var($destination, FILTER_VALIDATE_EMAIL)) {
+                if (CustomEmailValidator::isValid($destination)) {
                     $validEmailDestination = $destination;
                 }
 
@@ -309,7 +307,7 @@ class ReceiveEmail extends Command
             $ruleIds = array_keys($ruleIdsAndActions);
         }
 
-        $message = new ReplyToEmail($this->user, $this->alias, $verifiedRecipient, $emailData, $ruleIds);
+        $message = new ReplyToEmail($this->user, $this->alias, $verifiedRecipient, $emailData, $ruleIds, [$destination]);
 
         Mail::to($destination)->queue($message);
     }
@@ -364,7 +362,7 @@ class ReceiveEmail extends Command
             $ruleIds = array_keys($ruleIdsAndActions);
         }
 
-        $message = new SendFromEmail($this->user, $this->alias, $verifiedRecipient, $emailData, $ruleIds);
+        $message = new SendFromEmail($this->user, $this->alias, $verifiedRecipient, $emailData, $ruleIds, [$destination]);
 
         Mail::to($destination)->queue($message);
     }

@@ -455,7 +455,7 @@
               <input
                 type="submit"
                 :disabled="regenerateTwoFactorForm.processing"
-                class="text-indigo-900 bg-transparent cursor-pointer disabled:cursor-not-allowed dark:text-indigo-400"
+                class="text-indigo-500 hover:text-indigo-800 dark:text-indigo-200 dark:hover:text-indigo-300 bg-transparent cursor-pointer disabled:cursor-not-allowed"
                 value="Click here to regenerate your secret key"
               />
 
@@ -626,7 +626,9 @@
                 <div class="table-cell p-1 md:p-4 font-semibold">Created</div>
                 <div class="table-cell p-1 md:p-4 font-semibold">Enabled</div>
                 <div class="table-cell p-1 md:p-4 text-right">
-                  <a href="/webauthn/keys/create" class="text-indigo-700 dark:text-indigo-400"
+                  <a
+                    href="/webauthn/keys/create"
+                    class="text-indigo-500 hover:text-indigo-800 dark:text-indigo-200 dark:hover:text-indigo-300"
                     >Add New Key</a
                   >
                 </div>

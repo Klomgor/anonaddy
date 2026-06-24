@@ -72,7 +72,7 @@
 
                         <div class="flex flex-wrap justify-between items-center">
                             <div class="mr-5 mt-4">
-                                <input type="checkbox" name="remember" id="remember" class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600" {{ old('remember') ? 'checked' : '' }}>
+                                <input type="checkbox" name="remember" id="remember" class="h-4 w-4 rounded border-grey-300 text-indigo-600 focus:ring-indigo-600" {{ old('remember') ? 'checked' : '' }}>
                                 <label class="text-sm text-grey-700 ml-2" for="remember">
                                     {{ __('Remember Me') }}
                                 </label>

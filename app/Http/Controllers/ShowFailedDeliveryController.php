@@ -18,7 +18,7 @@ class ShowFailedDeliveryController extends Controller
 
         $query = user()
             ->failedDeliveries()
-            ->with(['recipient:id,email', 'alias:id,email'])
+            ->with(['recipient:id,email', 'alias:id,email,description'])
             ->select(['alias_id', 'email_type', 'code', 'attempted_at', 'created_at', 'id', 'user_id', 'recipient_id', 'remote_mta', 'sender', 'destination', 'is_stored', 'resent', 'quarantined', 'ir_dedupe_key'])
             ->latest();
 

@@ -75,7 +75,7 @@ class CustomMailer extends Mailer
             $recipient = Recipient::find($data['recipientId']);
 
             try {
-                $encrypter = new OpenPGPEncrypter(config('anonaddy.signing_key_fingerprint'), $data['fingerprint'], '~/.gnupg', $recipient->protected_headers);
+                $encrypter = new OpenPGPEncrypter(config('anonaddy.signing_key_fingerprint'), $data['fingerprint'], config('anonaddy.gnupg_home'), $recipient->protected_headers, $recipient->public_key);
 
                 $encryptedSymfonyMessage = $recipient->inline_encryption ? $encrypter->encryptInline($symfonyMessage) : $encrypter->encrypt($symfonyMessage);
             } catch (Exception $e) {
@@ -227,7 +227,7 @@ class CustomMailer extends Mailer
                         // Notify user of failed delivery
                         if ($notifiable?->email_verified_at && $user?->shouldReceiveFailedDeliveryNotification(false)) {
 
-                            $notifiable->notify(new FailedDeliveryNotification($alias->email ?? null, $failedDelivery->sender, $symfonyMessage->getSubject(), $failedDelivery?->is_stored, $user?->store_failed_deliveries, $recipient?->email, false, $symfonyMessage->getHeaders()->get('X-AnonAddy-Authentication-Results')?->getBodyAsString(), $failedDelivery?->remote_mta));
+                            $notifiable->notify(new FailedDeliveryNotification($alias->email ?? null, $failedDelivery->sender, $symfonyMessage->getSubject(), $failedDelivery?->is_stored, $user?->store_failed_deliveries, $recipient?->email, false, $symfonyMessage->getHeaders()->get('X-AnonAddy-Authentication-Results')?->getBodyAsString(), $failedDelivery?->remote_mta, $failedDelivery?->code));
                         }
                     }
                 }

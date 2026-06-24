@@ -12,7 +12,7 @@
               href="https://addons.mozilla.org/en-GB/firefox/addon/addy_io/"
               target="_blank"
               rel="nofollow noopener noreferrer"
-              class="text-indigo-700 dark:text-indigo-400"
+              class="text-indigo-500 hover:text-indigo-800 dark:text-indigo-200 dark:hover:text-indigo-300"
               >Firefox</a
             >
             ,
@@ -20,7 +20,7 @@
               href="https://chrome.google.com/webstore/detail/addyio-anonymous-email-fo/iadbdpnoknmbdeolbapdackdcogdmjpe"
               target="_blank"
               rel="nofollow noopener noreferrer"
-              class="text-indigo-700 dark:text-indigo-400"
+              class="text-indigo-500 hover:text-indigo-800 dark:text-indigo-200 dark:hover:text-indigo-300"
               >Chrome</a
             >
             ,
@@ -28,7 +28,7 @@
               href="https://microsoftedge.microsoft.com/addons/detail/addyio-anonymous-email/ohjlgpcfncgkijjfmabldlgnccmgcehl"
               target="_blank"
               rel="nofollow noopener noreferrer"
-              class="text-indigo-700 dark:text-indigo-400"
+              class="text-indigo-500 hover:text-indigo-800 dark:text-indigo-200 dark:hover:text-indigo-300"
               >Edge</a
             >
             and
@@ -36,14 +36,18 @@
               href="https://apps.apple.com/app/addy-io-extension/id6670220050"
               target="_blank"
               rel="nofollow noopener noreferrer"
-              class="text-indigo-700 dark:text-indigo-400"
+              class="text-indigo-500 hover:text-indigo-800 dark:text-indigo-200 dark:hover:text-indigo-300"
               >Safari</a
             >
             to create new aliases. They can also be used with the official mobile apps. Simply paste
             a key you've created into the browser extension or mobile apps to get started. Your API
             access keys <b>are secret and should be treated like your password</b>. For more
             information please see the
-            <a href="/docs" class="text-indigo-700 dark:text-indigo-400">API documentation</a>.
+            <a
+              href="/docs"
+              class="text-indigo-500 hover:text-indigo-800 dark:text-indigo-200 dark:hover:text-indigo-300"
+              >API documentation</a
+            >.
           </p>
         </div>
         <div class="mt-4">

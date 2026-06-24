@@ -24,12 +24,14 @@ class Recipient extends Model
     protected $keyType = 'string';
 
     protected $encrypted = [
+        'description',
         'email',
         'fingerprint',
     ];
 
     protected $fillable = [
         'email',
+        'description',
         'user_id',
         'can_reply_send',
         'should_encrypt',

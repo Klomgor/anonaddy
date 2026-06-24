@@ -14,7 +14,7 @@
               href="https://addy.io/faq/#what-happens-when-i-delete-my-account"
               rel="nofollow noopener noreferrer"
               target="_blank"
-              class="text-indigo-700 cursor-pointer dark:text-indigo-400"
+              class="text-indigo-500 hover:text-indigo-800 dark:text-indigo-200 dark:hover:text-indigo-300 cursor-pointer"
               >FAQ item</a
             >.
           </p>

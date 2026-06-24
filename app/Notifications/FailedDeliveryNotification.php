@@ -30,12 +30,14 @@ class FailedDeliveryNotification extends Notification implements ShouldBeEncrypt
 
     protected $remoteMta;
 
+    protected $failureReason;
+
     /**
      * Create a new notification instance.
      *
      * @return void
      */
-    public function __construct($aliasEmail, $originalSender, $originalSubject, $isStored = false, $storeFailedDeliveries = false, $recipientEmail = null, $quarantined = false, $authenticationResults = null, $remoteMta = null)
+    public function __construct($aliasEmail, $originalSender, $originalSubject, $isStored = false, $storeFailedDeliveries = false, $recipientEmail = null, $quarantined = false, $authenticationResults = null, $remoteMta = null, $failureReason = null)
     {
         $this->aliasEmail = $aliasEmail;
         $this->recipientEmail = $recipientEmail;
@@ -46,6 +48,7 @@ class FailedDeliveryNotification extends Notification implements ShouldBeEncrypt
         $this->quarantined = $quarantined;
         $this->authenticationResults = $authenticationResults;
         $this->remoteMta = $remoteMta;
+        $this->failureReason = $failureReason;
     }
 
     /**
@@ -77,6 +80,7 @@ class FailedDeliveryNotification extends Notification implements ShouldBeEncrypt
                 'quarantined' => $this->quarantined,
                 'authenticationResults' => $this->authenticationResults,
                 'remoteMta' => $this->remoteMta,
+                'failureReason' => $this->failureReason,
                 'isStored' => $this->isStored,
                 'storeFailedDeliveries' => $this->storeFailedDeliveries,
                 'userId' => $notifiable->user_id,

@@ -124,6 +124,7 @@
           </p>
           <Toggle
             id="can_reply_send"
+            label="Limit replies/sends to attached recipients only"
             class="mt-4"
             v-model="alias.attached_recipients_only"
             @on="enableAttachedRecipientsOnly"

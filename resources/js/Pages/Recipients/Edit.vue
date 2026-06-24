@@ -38,6 +38,9 @@
               >default</span
             >
           </div>
+          <div v-if="recipient.description" class="mt-2 text-sm text-grey-500 dark:text-grey-300">
+            {{ recipient.description }}
+          </div>
         </div>
         <div class="pt-8">
           <label
@@ -52,6 +55,7 @@
           </p>
           <Toggle
             id="can_reply_send"
+            label="Can reply and send from aliases"
             class="mt-4"
             v-model="recipient.can_reply_send"
             @on="allowRepliesSends"
@@ -76,6 +80,7 @@
           <Toggle
             v-if="recipient.fingerprint && !recipient.inline_encryption"
             id="hide_email_subject"
+            label="Hide email subject"
             class="mt-4"
             v-model="recipient.protected_headers"
             @on="turnOnProtectedHeaders"
@@ -84,6 +89,7 @@
           <Toggle
             v-else
             id="hide_email_subject"
+            label="Hide email subject"
             class="mt-4 cursor-not-allowed!"
             :title="
               recipient.inline_encryption
@@ -91,7 +97,7 @@
                 : 'You must enable encryption first by adding a PGP key'
             "
             v-model="recipient.protected_headers"
-            disabled="disabled"
+            :disabled="true"
           />
         </div>
 
@@ -113,6 +119,7 @@
           <Toggle
             v-if="recipient.fingerprint && !recipient.protected_headers"
             id="use_inline_encryption"
+            label="Use PGP/Inline encryption"
             class="mt-4"
             v-model="recipient.inline_encryption"
             @on="turnOnInlineEncryption"
@@ -121,6 +128,7 @@
           <Toggle
             v-else
             id="use_inline_encryption"
+            label="Use PGP/Inline encryption"
             class="mt-4 cursor-not-allowed!"
             :title="
               recipient.protected_headers
@@ -128,7 +136,7 @@
                 : 'You must enable encryption first by adding a PGP key'
             "
             v-model="recipient.inline_encryption"
-            disabled="disabled"
+            :disabled="true"
           />
         </div>
 
@@ -151,6 +159,7 @@
           </p>
           <Toggle
             id="remove_pgp_keys"
+            label="Remove PGP keys from replies/sends"
             class="mt-4"
             v-model="recipient.remove_pgp_keys"
             @on="turnOnRemovePgpKeys"
@@ -177,6 +186,7 @@
           </p>
           <Toggle
             id="remove_pgp_signatures"
+            label="Remove PGP signatures from replies/sends"
             class="mt-4"
             v-model="recipient.remove_pgp_signatures"
             @on="turnOnRemovePgpSignatures"

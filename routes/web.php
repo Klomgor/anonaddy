@@ -41,6 +41,7 @@ use App\Http\Controllers\SpamWarningBehaviourController;
 use App\Http\Controllers\StoreFailedDeliveryController;
 use App\Http\Controllers\TestAutoCreateRegexController;
 use App\Http\Controllers\UseReplyToController;
+use App\Http\Controllers\ValidateEmailController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -140,6 +141,8 @@ Route::middleware(['auth', 'verified', '2fa'])->group(function () {
     Route::get('/blocklist', [ShowBlocklistController::class, 'index'])->name('blocklist.index');
 
     Route::post('/test-auto-create-regex', [TestAutoCreateRegexController::class, 'index'])->name('test_auto_create_regex.index');
+
+    Route::post('/email/validate', ValidateEmailController::class)->name('email.validate');
 });
 
 Route::group([

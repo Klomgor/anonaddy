@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Alias;
 use App\Models\FailedDelivery;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Support\Carbon;
@@ -134,6 +135,29 @@ class ShowFailedDeliveriesTest extends TestCase
             ->has('initialRows.data', 1)
             ->where('initialFilter', 'inbound_quarantined')
         );
+    }
+
+    #[Test]
+    public function failed_deliveries_include_alias_description(): void
+    {
+        $alias = Alias::factory()->create([
+            'user_id' => $this->user->id,
+            'description' => 'Newsletter signup',
+        ]);
+
+        FailedDelivery::factory()->create([
+            'user_id' => $this->user->id,
+            'alias_id' => $alias->id,
+        ]);
+
+        $this->get('/failed-deliveries')
+            ->assertSuccessful()
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('initialRows.data', 1, fn (Assert $page) => $page
+                    ->where('alias.description', 'Newsletter signup')
+                    ->etc()
+                )
+            );
     }
 
     #[Test]

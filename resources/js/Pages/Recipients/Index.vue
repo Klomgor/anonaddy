@@ -97,6 +97,54 @@
             <button @click="openMakeDefaultModal(props.row)">Make Default</button>
           </span>
         </span>
+        <span v-else-if="props.column.field == 'description'">
+          <div v-if="recipientIdToEdit === props.row.id" class="flex items-center">
+            <input
+              @keyup.enter="editRecipient(rows[props.row.originalIndex])"
+              @keyup.esc="recipientIdToEdit = recipientDescriptionToEdit = ''"
+              v-model="recipientDescriptionToEdit"
+              type="text"
+              class="grow appearance-none bg-grey-50 border text-grey-700 focus:outline-hidden rounded px-2 py-1 dark:text-white dark:bg-white/5"
+              :class="
+                recipientDescriptionToEdit.length > 200 ? 'border-red-500' : 'border-transparent'
+              "
+              placeholder="Add description"
+              tabindex="0"
+              autofocus
+            />
+            <button
+              @click="recipientIdToEdit = recipientDescriptionToEdit = ''"
+              aria-label="Cancel"
+            >
+              <icon name="close" class="inline-block w-6 h-6 text-red-300 fill-current" />
+            </button>
+            <button @click="editRecipient(rows[props.row.originalIndex])" aria-label="Save">
+              <icon name="save" class="inline-block w-6 h-6 text-cyan-500 fill-current" />
+            </button>
+          </div>
+          <div v-else-if="props.row.description" class="flex items-centers">
+            <span class="outline-hidden text-grey-500 mr-2 dark:text-grey-300">{{
+              $filters.truncate(props.row.description, 60)
+            }}</span>
+            <button
+              @click="
+                ;((recipientIdToEdit = props.row.id),
+                  (recipientDescriptionToEdit = props.row.description))
+              "
+              aria-label="Edit"
+            >
+              <icon name="edit" class="inline-block w-6 h-6 text-grey-300 fill-current" />
+            </button>
+          </div>
+          <div v-else class="flex justify-center">
+            <button
+              @click=";((recipientIdToEdit = props.row.id), (recipientDescriptionToEdit = ''))"
+              aria-label="Add description"
+            >
+              <icon name="plus" class="block w-6 h-6 text-grey-300 fill-current" />
+            </button>
+          </div>
+        </span>
         <span v-else-if="props.column.field === 'aliases'">
           <loader v-if="aliasCountLoading" />
           <span
@@ -127,6 +175,7 @@
         <span v-else-if="props.column.field === 'should_encrypt'">
           <span v-if="props.row.fingerprint" class="flex">
             <Toggle
+              :label="`Encrypt forwarded emails to ${props.row.email}`"
               v-model="rows[props.row.originalIndex].should_encrypt"
               @on="turnOnEncryption(props.row.id)"
               @off="turnOffEncryption(props.row.id)"
@@ -432,6 +481,7 @@ import tippy from 'tippy.js'
 import { VueGoodTable } from 'vue-good-table-next'
 import { notify } from '@kyvg/vue3-notification'
 import { InformationCircleIcon, InboxArrowDownIcon } from '@heroicons/vue/24/outline'
+import { validateCustomEmailWithErrors } from '../../utils/customEmailValidator.js'
 
 const props = defineProps({
   initialRows: {
@@ -465,6 +515,8 @@ const makeDefaultLoading = ref(false)
 const makeDefaultModalOpen = ref(false)
 const recipientToMakeDefault = ref(null)
 const moreInfoOpen = ref(false)
+const recipientIdToEdit = ref('')
+const recipientDescriptionToEdit = ref('')
 const recipientToAddKey = ref({})
 const resendVerificationLoading = ref(false)
 const tippyInstance = ref(null)
@@ -485,6 +537,10 @@ const columns = [
   {
     label: 'Email',
     field: 'email',
+  },
+  {
+    label: 'Description',
+    field: 'description',
   },
   {
     label: 'Alias Count',
@@ -543,6 +599,34 @@ onMounted(() => {
 
 const isDefault = id => {
   return defaultRecipientId.value === id
+}
+
+const editRecipient = recipient => {
+  if (recipientDescriptionToEdit.value.length > 200) {
+    return errorMessage('Description cannot be more than 200 characters')
+  }
+
+  axios
+    .patch(
+      `/api/v1/recipients/${recipient.id}`,
+      JSON.stringify({
+        description: recipientDescriptionToEdit.value,
+      }),
+      {
+        headers: { 'Content-Type': 'application/json' },
+      },
+    )
+    .then(() => {
+      recipient.description = recipientDescriptionToEdit.value
+      recipientIdToEdit.value = ''
+      recipientDescriptionToEdit.value = ''
+      successMessage('Recipient description updated')
+    })
+    .catch(() => {
+      recipientIdToEdit.value = ''
+      recipientDescriptionToEdit.value = ''
+      errorMessage()
+    })
 }
 
 const addNewRecipient = () => {
@@ -811,20 +895,29 @@ const closeRecipientKeyModal = () => {
   recipientToAddKey.value = {}
 }
 
-const validateNewRecipient = e => {
+const validateNewRecipient = async e => {
+  e.preventDefault()
   errors.value = {}
 
   if (!newRecipient.value) {
     errors.value.newRecipient = 'Email required'
-  } else if (!validEmail(newRecipient.value)) {
-    errors.value.newRecipient = 'Valid Email required'
+
+    return
   }
 
-  if (!errors.value.newRecipient) {
-    addNewRecipient()
+  addRecipientLoading.value = true
+
+  const validation = await validateCustomEmailWithErrors(newRecipient.value)
+
+  addRecipientLoading.value = false
+
+  if (!validation.valid) {
+    errors.value.newRecipient = validation.message
+
+    return
   }
 
-  e.preventDefault()
+  addNewRecipient()
 }
 
 const validateRecipientKey = e => {
@@ -841,12 +934,6 @@ const validateRecipientKey = e => {
   }
 
   e.preventDefault()
-}
-
-const validEmail = email => {
-  let re =
-    /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
-  return re.test(email)
 }
 
 const validKey = key => {

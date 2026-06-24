@@ -613,6 +613,7 @@
             </span>
             <span v-else-if="props.column.field === 'active'" class="flex items-center">
               <Toggle
+                :label="`Active, ${props.row.email}`"
                 v-model="rows[props.row.originalIndex].active"
                 @on="activateAlias(rows[props.row.originalIndex])"
                 @off="deactivateAlias(rows[props.row.originalIndex])"
@@ -1361,6 +1362,7 @@ import {
   EnvelopeIcon,
 } from '@heroicons/vue/24/outline'
 import { ChevronDownIcon, CheckIcon, PlusIcon } from '@heroicons/vue/20/solid'
+import { validateCustomEmailWithErrors } from '../../utils/customEmailValidator.js'
 
 const props = defineProps({
   initialRows: {
@@ -2724,11 +2726,17 @@ const recipientsTooltip = recipients => {
   return _.reduce(recipients, (list, recipient) => list + `${recipient.email}<br>`, '')
 }
 
-const displaySendFromAddress = alias => {
+const displaySendFromAddress = async alias => {
   errors.value = {}
+  sendFromAliasLoading.value = true
 
-  if (!validEmail(sendFromAliasDestination.value)) {
-    errors.value.sendFromAliasDestination = 'Valid Email required'
+  const validation = await validateCustomEmailWithErrors(sendFromAliasDestination.value)
+
+  sendFromAliasLoading.value = false
+
+  if (!validation.valid) {
+    errors.value.sendFromAliasDestination = validation.message
+
     return
   }
 
@@ -2777,12 +2785,6 @@ const has = (object, path) => {
 const validLocalPart = part => {
   let re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))$/
   return re.test(part)
-}
-
-const validEmail = email => {
-  let re =
-    /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
-  return re.test(email)
 }
 
 const disabledBulkActivate = () => {

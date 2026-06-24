@@ -111,6 +111,7 @@ Route::group([
         Route::get('/recipients', 'index');
         Route::get('/recipients/{id}', 'show');
         Route::post('/recipients', 'store');
+        Route::patch('/recipients/{id}', 'update');
         Route::delete('/recipients/{id}', 'destroy');
     });
 

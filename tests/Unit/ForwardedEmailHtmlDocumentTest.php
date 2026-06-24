@@ -45,6 +45,48 @@ class ForwardedEmailHtmlDocumentTest extends TestCase
     }
 
     #[Test]
+    public function head_style_blocks_are_prepended_before_body_inner_html(): void
+    {
+        $html = '<!DOCTYPE html><html><head><title>t</title>'
+            .'<style type="text/css">.form { color: #1d2236; }</style></head>'
+            .'<body><div class="form">Hi</div></body></html>';
+
+        $result = ForwardedEmailHtmlDocument::innerHtmlForEmbedding($html);
+
+        $this->assertStringStartsWith('<style', ltrim($result));
+        $this->assertStringContainsString('.form { color: #1d2236; }', $result);
+        $this->assertStringContainsString('<div class="form">Hi</div>', $result);
+        $this->assertStringNotContainsString('<title>', $result);
+    }
+
+    #[Test]
+    public function head_stylesheet_link_tags_are_prepended(): void
+    {
+        $html = '<html><head>'
+            .'<link href="https://fonts.googleapis.com/css?family=Ubuntu" rel="stylesheet" type="text/css">'
+            .'</head><body><p>x</p></body></html>';
+
+        $result = ForwardedEmailHtmlDocument::innerHtmlForEmbedding($html);
+
+        $this->assertStringStartsWith('<link', ltrim($result));
+        $this->assertStringContainsString('href="https://fonts.googleapis.com/css?family=Ubuntu"', $result);
+        $this->assertStringContainsString('<p>x</p>', $result);
+    }
+
+    #[Test]
+    public function non_stylesheet_link_tags_in_head_are_ignored(): void
+    {
+        $html = '<html><head>'
+            .'<link rel="icon" href="/favicon.ico">'
+            .'</head><body><p>y</p></body></html>';
+
+        $result = ForwardedEmailHtmlDocument::innerHtmlForEmbedding($html);
+
+        $this->assertStringStartsWith('<p>y</p>', ltrim($result));
+        $this->assertStringNotContainsString('favicon', $result);
+    }
+
+    #[Test]
     public function utf8_content_in_body_is_preserved(): void
     {
         $html = '<html><head><meta charset="UTF-8"></head><body><p>Café 日本語</p></body></html>';
@@ -65,6 +107,18 @@ class ForwardedEmailHtmlDocumentTest extends TestCase
 
         $this->assertStringContainsString('äöüß', $result);
         $this->assertStringNotContainsString("\xC3\x83\xC2\xA4", $result);
+    }
+
+    #[Test]
+    public function mso_downlevel_revealed_conditional_comments_are_preserved(): void
+    {
+        $html = '<html><body><!--[if !mso]><!-- --><div>Mobile</div><!-- <![endif] --></body></html>';
+
+        $result = ForwardedEmailHtmlDocument::innerHtmlForEmbedding($html);
+
+        $this->assertStringContainsString('<!--[if !mso]><!-- -->', $result);
+        $this->assertStringContainsString('<!-- <![endif] -->', $result);
+        $this->assertStringNotContainsString('&lt;![if !mso]', $result);
     }
 
     #[Test]

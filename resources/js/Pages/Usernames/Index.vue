@@ -178,6 +178,7 @@
         </span>
         <span v-else-if="props.column.field === 'active'" class="flex items-center">
           <Toggle
+            :label="`Active, ${props.row.username}`"
             v-model="rows[props.row.originalIndex].active"
             @on="activateUsername(props.row.id)"
             @off="deactivateUsername(props.row.id)"
@@ -185,6 +186,7 @@
         </span>
         <span v-else-if="props.column.field === 'catch_all'" class="flex items-center">
           <Toggle
+            :label="`Catch-All, ${props.row.username}`"
             v-model="rows[props.row.originalIndex].catch_all"
             @on="enableCatchAll(props.row.id)"
             @off="disableCatchAll(props.row.id)"

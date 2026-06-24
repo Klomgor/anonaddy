@@ -8,6 +8,7 @@ use App\Models\EmailData;
 use App\Models\Recipient;
 use App\Models\User;
 use App\Notifications\FailedDeliveryNotification;
+use App\Services\ReplyQuotedReverseAliasRewriter;
 use App\Traits\ApplyUserRules;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeEncrypted;
@@ -61,11 +62,17 @@ class SendFromEmail extends Mailable implements ShouldBeEncrypted, ShouldQueue
     protected $ruleIds;
 
     /**
+     * @var array<int, string>
+     */
+    protected array $sendDestinations = [];
+
+    /**
      * Create a new message instance.
      *
+     * @param  array<int, string>  $sendDestinations  Decoded addresses the outbound message is sent to
      * @return void
      */
-    public function __construct(User $user, Alias $alias, Recipient $recipient, EmailData $emailData, $ruleIds = null)
+    public function __construct(User $user, Alias $alias, Recipient $recipient, EmailData $emailData, $ruleIds = null, array $sendDestinations = [])
     {
         $this->user = $user;
         $this->alias = $alias;
@@ -126,6 +133,7 @@ class SendFromEmail extends Mailable implements ShouldBeEncrypted, ShouldQueue
         $this->displayFrom = $alias->getFromName();
         $this->size = $emailData->size;
         $this->ruleIds = $ruleIds;
+        $this->sendDestinations = $sendDestinations;
     }
 
     /**
@@ -314,15 +322,19 @@ class SendFromEmail extends Mailable implements ShouldBeEncrypted, ShouldQueue
 
     private function removeRealEmailAndTextBanner($text)
     {
-        return Str::of(str_ireplace($this->sender, '', $text))
+        $recipients = ReplyQuotedReverseAliasRewriter::collectRecipientAddresses($this, $this->sendDestinations, $this->tos ?? [], $this->ccs ?? []);
+
+        return Str::of(ReplyQuotedReverseAliasRewriter::rewrite(str_ireplace($this->sender, '', $text), $this->alias, $recipients))
             ->replaceMatches('/(?s)((<|&lt;)!--banner-info--(&gt;|>)).*?((<|&lt;)!--banner-info--(&gt;|>))/mis', '')
             ->replaceMatches('/(This email was sent to).*?(to deactivate this alias)/mis', '');
     }
 
     private function removeRealEmailAndHtmlBanner($html)
     {
+        $recipients = ReplyQuotedReverseAliasRewriter::collectRecipientAddresses($this, $this->sendDestinations, $this->tos ?? [], $this->ccs ?? []);
+
         // Reply may be HTML but have a plain text banner
-        return Str::of(str_ireplace($this->sender, '', $html))
+        $result = Str::of(ReplyQuotedReverseAliasRewriter::rewrite(str_ireplace($this->sender, '', $html), $this->alias, $recipients))
             ->replaceMatches('/(?s)((<|&lt;)!--banner-info--(&gt;|>)).*?((<|&lt;)!--banner-info--(&gt;|>))/mis', '')
             ->replaceMatches('/(?s)(<tr((?!<tr).)*?'.preg_quote(Str::of(config('app.url'))->after('://')->rtrim('/'), '/').'(\/|%2F)deactivate(\/|%2F).*?\/tr>)/mis', '');
     }

@@ -31,7 +31,7 @@
               <a
                 href="/import-aliases-template.csv"
                 rel="nofollow noopener noreferrer"
-                class="text-indigo-700 cursor-pointer dark:text-indigo-400"
+                class="text-indigo-500 hover:text-indigo-800 dark:text-indigo-200 dark:hover:text-indigo-300 cursor-pointer"
                 >Click here to download the CSV import template</a
               >
             </p>

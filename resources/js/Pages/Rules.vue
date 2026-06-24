@@ -89,6 +89,7 @@
                 </td>
                 <td scope="row" class="p-3">
                   <Toggle
+                    :label="`Active, ${element.name}`"
                     v-model="element.active"
                     @on="activateRule(element.id)"
                     @off="deactivateRule(element.id)"

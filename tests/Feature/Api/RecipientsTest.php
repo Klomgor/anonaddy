@@ -57,6 +57,21 @@ class RecipientsTest extends TestCase
     }
 
     #[Test]
+    public function user_can_update_recipient_description()
+    {
+        $recipient = Recipient::factory()->create([
+            'user_id' => $this->user->id,
+        ]);
+
+        $response = $this->json('PATCH', '/api/v1/recipients/'.$recipient->id, [
+            'description' => 'The new description',
+        ]);
+
+        $response->assertSuccessful();
+        $this->assertEquals('The new description', $response->getData()->data->description);
+    }
+
+    #[Test]
     public function recipients_index_omits_alias_count_when_filter_alias_count_is_false()
     {
         Recipient::factory()->create(['user_id' => $this->user->id]);

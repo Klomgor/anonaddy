@@ -7,6 +7,10 @@ use Symfony\Component\Mime\Part\DataPart;
 
 class CustomDataPart extends DataPart
 {
+    private ?string $cid;
+
+    private ?string $filename;
+
     /**
      * Sets the content-id of the file.
      *
@@ -14,6 +18,19 @@ class CustomDataPart extends DataPart
      */
     public function setContentId(string $cid): static
     {
+        $cid = trim($cid);
+
+        // Normalise common wrappers and remove any control characters to avoid
+        // Symfony Mime throwing when it later renders Identification headers.
+        $cid = trim($cid, "<> \t\n\r\0\x0B");
+        $cid = preg_replace('/[\x00-\x1F\x7F]/', '', $cid) ?? '';
+
+        if ($cid === '') {
+            $this->cid = $this->generateContentId();
+
+            return $this;
+        }
+
         $this->cid = $cid;
 
         return $this;

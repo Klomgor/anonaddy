@@ -21,6 +21,7 @@ class ShowRecipientController extends Controller
                 'id',
                 'user_id',
                 'email',
+                'description',
                 'should_encrypt',
                 'fingerprint',
                 'email_verified_at',
@@ -38,7 +39,8 @@ class ShowRecipientController extends Controller
             $searchTerm = strtolower($validated['search']);
 
             $recipients = $recipients->filter(function ($recipient) use ($searchTerm) {
-                return Str::contains(strtolower($recipient->email), $searchTerm);
+                return Str::contains(strtolower($recipient->email), $searchTerm)
+                    || Str::contains(strtolower($recipient->description ?? ''), $searchTerm);
             })->values();
         }
 
@@ -82,7 +84,7 @@ class ShowRecipientController extends Controller
         $recipient = user()->recipients()->findOrFail($id);
 
         return Inertia::render('Recipients/Edit', [
-            'initialRecipient' => $recipient->only(['id', 'user_id', 'email', 'can_reply_send', 'fingerprint', 'protected_headers', 'inline_encryption', 'remove_pgp_keys', 'remove_pgp_signatures', 'email_verified_at', 'updated_at']),
+            'initialRecipient' => $recipient->only(['id', 'user_id', 'email', 'description', 'can_reply_send', 'fingerprint', 'protected_headers', 'inline_encryption', 'remove_pgp_keys', 'remove_pgp_signatures', 'email_verified_at', 'updated_at']),
         ]);
     }
 }

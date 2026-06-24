@@ -115,10 +115,11 @@
           <Toggle
             v-if="defaultUsernameId === username.id"
             id="can_login"
+            label="Can be used to login"
             class="mt-4 cursor-not-allowed!"
             title="You cannot disallow login for your default username"
             v-model="username.can_login"
-            disabled="disabled"
+            :disabled="true"
           />
           <Toggle
             v-else

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\IndexRecipientRequest;
 use App\Http\Requests\ShowRecipientRequest;
 use App\Http\Requests\StoreRecipientRequest;
+use App\Http\Requests\UpdateRecipientRequest;
 use App\Http\Resources\RecipientResource;
 
 class RecipientController extends Controller
@@ -53,6 +54,19 @@ class RecipientController extends Controller
         if (! config('anonaddy.auto_verify_new_recipients')) {
             $recipient->sendEmailVerificationNotification();
         }
+
+        return new RecipientResource($recipient->refresh()->loadCount('aliases'));
+    }
+
+    public function update(UpdateRecipientRequest $request, $id)
+    {
+        $recipient = user()->recipients()->findOrFail($id);
+
+        if ($request->has('description')) {
+            $recipient->description = $request->description;
+        }
+
+        $recipient->save();
 
         return new RecipientResource($recipient->refresh()->loadCount('aliases'));
     }

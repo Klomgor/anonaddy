@@ -15,6 +15,7 @@ return [
         'webauthn.create',
         'verification.notice',
         'verification.resend',
+        'email.validate',
         'logout',
         'account.destroy',
     ],

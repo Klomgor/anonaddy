@@ -12,6 +12,7 @@ class RecipientResource extends JsonResource
             'id' => $this->id,
             'user_id' => $this->user_id,
             'email' => $this->email,
+            'description' => $this->description,
             'can_reply_send' => $this->can_reply_send,
             'should_encrypt' => $this->should_encrypt,
             'inline_encryption' => $this->inline_encryption,

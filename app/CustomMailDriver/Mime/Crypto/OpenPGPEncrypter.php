@@ -3,6 +3,7 @@
 namespace App\CustomMailDriver\Mime\Crypto;
 
 use App\CustomMailDriver\Mime\Part\EncryptedPart;
+use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Str;
 use Symfony\Component\Mailer\Exception\RuntimeException;
 use Symfony\Component\Mime\Email;
@@ -25,6 +26,8 @@ class OpenPGPEncrypter
     protected $micalg = 'SHA256';
 
     protected $recipientKey = null;
+
+    protected $recipientPublicKey = null;
 
     /**
      * The fingerprint of the key that will be used to sign the email. Populated either with
@@ -54,13 +57,14 @@ class OpenPGPEncrypter
      */
     protected $gnupgHome = null;
 
-    public function __construct($signingKey = null, $recipientKey = null, $gnupgHome = null, $usesProtectedHeaders = false)
+    public function __construct($signingKey = null, $recipientKey = null, $gnupgHome = null, $usesProtectedHeaders = false, $recipientPublicKey = null)
     {
-        $this->initGNUPG();
         $this->signingKey = $signingKey;
         $this->recipientKey = $recipientKey;
         $this->gnupgHome = $gnupgHome;
         $this->usesProtectedHeaders = $usesProtectedHeaders;
+        $this->recipientPublicKey = $recipientPublicKey;
+        $this->initGNUPG();
     }
 
     /**
@@ -219,11 +223,26 @@ class OpenPGPEncrypter
             $this->gnupgHome = getenv('HOME').'/.gnupg';
         }
 
+        putenv('GNUPGHOME='.$this->resolveGnupgHome());
+
         if (! $this->gnupg) {
             $this->gnupg = new \gnupg;
         }
 
         $this->gnupg->seterrormode(\gnupg::ERROR_EXCEPTION);
+    }
+
+    protected function resolveGnupgHome(): string
+    {
+        $home = $this->gnupgHome ?? '';
+
+        if (Str::startsWith($home, '~')) {
+            $userHome = getenv('HOME') ?: ($_SERVER['HOME'] ?? '');
+
+            return $userHome.substr($home, 1);
+        }
+
+        return $home;
     }
 
     /**
@@ -235,25 +254,67 @@ class OpenPGPEncrypter
      */
     protected function pgpEncryptAndSignString($text, $keyFingerprint, $signingKeyFingerprint)
     {
-        if (isset($this->keyPassphrases[$signingKeyFingerprint]) && ! $this->keyPassphrases[$signingKeyFingerprint]) {
-            $passPhrase = $this->keyPassphrases[$signingKeyFingerprint];
-        } else {
-            $passPhrase = null;
+        $recipientArgs = $this->buildEncryptRecipientArgs($keyFingerprint);
+
+        return $this->runGpgCommand(array_merge(
+            ['--local-user', $signingKeyFingerprint, '--encrypt', '--sign'],
+            $recipientArgs
+        ), $text);
+    }
+
+    protected function pgpEncryptString($text, $keyFingerprint)
+    {
+        return $this->runGpgCommand(array_merge(
+            ['--encrypt'],
+            $this->buildEncryptRecipientArgs($keyFingerprint)
+        ), $text);
+    }
+
+    /**
+     * @return list<string>
+     */
+    protected function buildEncryptRecipientArgs(string $keyFingerprint): array
+    {
+        $this->ensureRecipientPublicKeyImported();
+
+        $args = [];
+
+        foreach ($this->getSubkeyFingerprints($keyFingerprint, 'encrypt') as $fingerprint) {
+            $args[] = '-r';
+            $args[] = $fingerprint.'!';
         }
 
-        $this->gnupg->clearsignkeys();
-        $this->gnupg->addsignkey($signingKeyFingerprint, $passPhrase);
-        $this->gnupg->clearencryptkeys();
-        $this->gnupg->addencryptkey($keyFingerprint);
-        $this->gnupg->setarmor(1);
+        return $args;
+    }
 
-        $encrypted = $this->gnupg->encryptsign($text);
+    /**
+     * @param  list<string>  $args
+     *
+     * @throws RuntimeException
+     */
+    protected function runGpgCommand(array $args, string $input): string
+    {
+        $gnupgHome = $this->resolveGnupgHome();
 
-        if ($encrypted) {
-            return $encrypted;
+        $command = array_merge([
+            'gpg',
+            '--homedir', $gnupgHome,
+            '--armor',
+            '--batch',
+            '--yes',
+            '--trust-model', 'always',
+        ], $args);
+
+        $result = Process::timeout(120)
+            ->env(['GNUPGHOME' => $gnupgHome])
+            ->input($input)
+            ->run($command);
+
+        if ($result->failed() || $result->output() === '') {
+            throw new RuntimeException('GPG command failed: '.trim($result->errorOutput() ?: 'unknown error'));
         }
 
-        throw new RuntimeException('Unable to encrypt and sign message');
+        return $result->output();
     }
 
     /**
@@ -263,11 +324,29 @@ class OpenPGPEncrypter
      */
     protected function getKey($identifier, $purpose)
     {
+        return $this->getSubkeyFingerprints($identifier, $purpose)[0];
+    }
+
+    /**
+     * @return list<string>
+     *
+     * @throws RuntimeException
+     */
+    protected function getSubkeyFingerprints(string $identifier, string $purpose): array
+    {
+        if ($this->recipientPublicKey) {
+            $fingerprints = $this->getSubkeyFingerprintsFromArmoredKey($this->recipientPublicKey, $purpose);
+
+            if ($fingerprints !== []) {
+                return $fingerprints;
+            }
+        }
+
         $keys = $this->gnupg->keyinfo($identifier);
         $fingerprints = [];
 
         foreach ($keys as $key) {
-            if ($this->isValidKey($key, $purpose)) {
+            if ($this->isUsablePrimaryKey($key)) {
                 foreach ($key['subkeys'] as $subKey) {
                     if ($this->isValidKey($subKey, $purpose)) {
                         $fingerprints[] = $subKey['fingerprint'];
@@ -276,16 +355,99 @@ class OpenPGPEncrypter
             }
         }
 
-        // Return first available to encrypt
-        if (count($fingerprints) >= 1) {
-            return $fingerprints[0];
+        if ($fingerprints === []) {
+            throw new RuntimeException(sprintf('Unable to find an active key to %s for %s, try importing keys first', $purpose, $identifier));
         }
 
-        /* if (count($fingerprints) > 1) {
-            throw new Swift_SwiftException(sprintf('Found more than one active key for %s use addRecipient() or addSignature()', $identifier));
-        } */
+        return $fingerprints;
+    }
 
-        throw new RuntimeException(sprintf('Unable to find an active key to %s for %s,try importing keys first', $purpose, $identifier));
+    protected function ensureRecipientPublicKeyImported(): void
+    {
+        if (! $this->recipientPublicKey) {
+            return;
+        }
+
+        $gnupgHome = $this->resolveGnupgHome();
+        $keyFile = $this->writeTemporaryKeyFile($this->recipientPublicKey);
+
+        try {
+            Process::timeout(30)
+                ->env(['GNUPGHOME' => $gnupgHome])
+                ->run(['gpg', '--homedir', $gnupgHome, '--batch', '--import', $keyFile]);
+        } finally {
+            @unlink($keyFile);
+        }
+    }
+
+    /**
+     * @return list<string>
+     */
+    protected function getSubkeyFingerprintsFromArmoredKey(string $armoredKey, string $purpose): array
+    {
+        $keyFile = $this->writeTemporaryKeyFile($armoredKey);
+
+        try {
+            $result = Process::timeout(30)
+                ->run(['gpg', '--with-colons', '--show-keys', $keyFile]);
+        } finally {
+            @unlink($keyFile);
+        }
+
+        if ($result->failed()) {
+            throw new RuntimeException('Unable to read public key: '.trim($result->errorOutput() ?: 'unknown error'));
+        }
+
+        return $this->parseColonKeyFingerprints($result->output(), $purpose);
+    }
+
+    /**
+     * @return list<string>
+     */
+    protected function parseColonKeyFingerprints(string $output, string $purpose): array
+    {
+        $fingerprints = [];
+        $capability = $purpose === 'encrypt' ? 'e' : 's';
+        $awaitingFingerprint = false;
+
+        foreach (explode("\n", $output) as $line) {
+            if (str_starts_with($line, 'sub:')) {
+                $fields = explode(':', $line);
+                $validity = $fields[1] ?? '';
+                $capabilities = $fields[11] ?? '';
+
+                $awaitingFingerprint = ! in_array($validity, ['r', 'e'], true)
+                    && str_contains($capabilities, $capability);
+
+                continue;
+            }
+
+            if ($awaitingFingerprint && str_starts_with($line, 'fpr:')) {
+                $fields = explode(':', $line);
+                $fingerprint = $fields[9] ?? '';
+
+                if ($fingerprint !== '') {
+                    $fingerprints[] = $fingerprint;
+                }
+
+                $awaitingFingerprint = false;
+            }
+        }
+
+        return $fingerprints;
+    }
+
+    protected function writeTemporaryKeyFile(string $armoredKey): string
+    {
+        $keyFile = tempnam(sys_get_temp_dir(), 'gpg-key-');
+        file_put_contents($keyFile, $armoredKey);
+
+        return $keyFile;
+    }
+
+    protected function isUsablePrimaryKey(array $key): bool
+    {
+        return ! ($key['disabled'] || $key['expired'] || $key['revoked']);
     }
 
     protected function isValidKey($key, $purpose)

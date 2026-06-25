@@ -833,6 +833,34 @@ class ReceiveEmailTest extends TestCase
     }
 
     #[Test]
+    public function it_does_not_enforce_bandwidth_limit_when_bandwidth_limit_is_disabled()
+    {
+        Notification::fake();
+
+        config([
+            'anonaddy.bandwidth_limit_enabled' => false,
+            'anonaddy.bandwidth_limit' => null,
+        ]);
+
+        $this->user->update(['bandwidth' => 100943820]);
+
+        $this->artisan(
+            'anonaddy:receive-email',
+            [
+                'file' => base_path('tests/emails/email.eml'),
+                '--sender' => 'will@anonaddy.com',
+                '--recipient' => ['ebay@johndoe.anonaddy.com'],
+                '--local_part' => ['ebay'],
+                '--extension' => [''],
+                '--domain' => ['johndoe.anonaddy.com'],
+                '--size' => '1000',
+            ]
+        )->assertExitCode(0);
+
+        Notification::assertNotSentTo($this->user, NearBandwidthLimit::class);
+    }
+
+    #[Test]
     public function it_does_not_send_near_bandwidth_limit_notification_more_than_once_per_day()
     {
         Notification::fake();

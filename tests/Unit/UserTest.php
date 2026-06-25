@@ -195,6 +195,22 @@ class UserTest extends TestCase
     }
 
     #[Test]
+    public function user_has_no_bandwidth_limit_when_bandwidth_limit_is_disabled()
+    {
+        config([
+            'anonaddy.bandwidth_limit_enabled' => false,
+            'anonaddy.bandwidth_limit' => null,
+        ]);
+
+        $this->user->update(['bandwidth' => 100943820]);
+
+        $this->assertNull($this->user->getBandwidthLimit());
+        $this->assertNull($this->user->getBandwidthLimitMb());
+        $this->assertFalse($this->user->hasReachedBandwidthLimit());
+        $this->assertFalse($this->user->nearBandwidthLimit());
+    }
+
+    #[Test]
     public function user_get_domain_options()
     {
         $username = $this->user->username;

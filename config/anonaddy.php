@@ -205,12 +205,17 @@ return [
     | Monthly Bandwidth Limit
     |--------------------------------------------------------------------------
     |
-    | This value is an integer that determines the monthly bandwidth
-    | limit for users in bytes the default value is 104857600 which is 100MB
+    | When enabled, bandwidth_limit is the monthly limit for users in bytes.
+    | The default value is 104857600 which is 100MB. Set
+    | ANONADDY_BANDWIDTH_LIMIT_ENABLED=false to disable enforcement.
     |
     */
 
-    'bandwidth_limit' => (int) env('ANONADDY_BANDWIDTH_LIMIT', 104857600),
+    'bandwidth_limit_enabled' => filter_var(env('ANONADDY_BANDWIDTH_LIMIT_ENABLED', true), FILTER_VALIDATE_BOOL),
+
+    'bandwidth_limit' => filter_var(env('ANONADDY_BANDWIDTH_LIMIT_ENABLED', true), FILTER_VALIDATE_BOOL)
+        ? (int) env('ANONADDY_BANDWIDTH_LIMIT', 104857600)
+        : null,
 
     /*
     |--------------------------------------------------------------------------

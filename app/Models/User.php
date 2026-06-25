@@ -483,19 +483,37 @@ class User extends Authenticatable implements MustVerifyEmail
         return config('anonaddy.bandwidth_limit');
     }
 
-    public function getBandwidthLimitMb()
+    public function getBandwidthLimitMb(): ?float
     {
-        return round($this->getBandwidthLimit() / 1024 / 1024, 2);
+        $limit = $this->getBandwidthLimit();
+
+        if ($limit === null) {
+            return null;
+        }
+
+        return round($limit / 1024 / 1024, 2);
     }
 
-    public function nearBandwidthLimit()
+    public function nearBandwidthLimit(): bool
     {
-        return ($this->bandwidth / $this->getBandwidthLimit()) > 0.9;
+        $limit = $this->getBandwidthLimit();
+
+        if ($limit === null) {
+            return false;
+        }
+
+        return ($this->bandwidth / $limit) > 0.9;
     }
 
-    public function hasReachedBandwidthLimit()
+    public function hasReachedBandwidthLimit(): bool
     {
-        return $this->bandwidth >= $this->getBandwidthLimit();
+        $limit = $this->getBandwidthLimit();
+
+        if ($limit === null) {
+            return false;
+        }
+
+        return $this->bandwidth >= $limit;
     }
 
     public function hasExceededNewAliasLimit()

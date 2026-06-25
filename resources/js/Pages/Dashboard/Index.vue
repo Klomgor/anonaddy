@@ -68,7 +68,7 @@
         </div>
         <span
           class="h-8 absolute top-0 right-0 flex items-center pr-4 text-grey-600 font-semibold dark:text-grey-200"
-          >{{ bandwidthLimit }}MB</span
+          >{{ bandwidthLimitLabel }}</span
         >
       </div>
     </div>
@@ -229,8 +229,8 @@ const props = defineProps({
     required: true,
   },
   bandwidthLimit: {
-    type: Number,
     required: true,
+    validator: value => typeof value === 'number' || value === null,
   },
   month: {
     type: String,
@@ -281,8 +281,12 @@ onMounted(() => {
   })
 })
 
+const bandwidthLimitLabel = computed(() => {
+  return props.bandwidthLimit === null ? '∞' : `${props.bandwidthLimit}MB`
+})
+
 const bandwidthPercentage = computed(() => {
-  if (props.bandwidthMb) {
+  if (props.bandwidthMb && props.bandwidthLimit !== null) {
     let percent = ((props.bandwidthMb / props.bandwidthLimit) * 100).toFixed(2)
 
     return percent > 100 ? 100 : percent

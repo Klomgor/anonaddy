@@ -353,9 +353,19 @@ class ReplyToEmail extends Mailable implements ShouldBeEncrypted, ShouldQueue
         $recipients = ReplyQuotedReverseAliasRewriter::collectRecipientAddresses($this, $this->replyDestinations, $this->tos ?? [], $this->ccs ?? []);
 
         // Reply may be HTML but have a plain text banner
-        $result = Str::of(ReplyQuotedReverseAliasRewriter::rewrite(str_ireplace($this->sender, '', $html), $this->alias, $recipients))
-            ->replaceMatches('/(?s)((<|&lt;)!--banner-info--(&gt;|>)).*?((<|&lt;)!--banner-info--(&gt;|>))/mi', '')
-            ->replaceMatches('/(?s)(<tr((?!<tr).)*?'.preg_quote(Str::of(config('app.url'))->after('://')->rtrim('/'), '/')."(\/|%2F)deactivate(\/|%2F).*?\/tr>)/mi", '');
+        $html = ReplyQuotedReverseAliasRewriter::rewrite(str_ireplace($this->sender, '', $html), $this->alias, $recipients);
+
+        $html = preg_replace('/(?s)((<|&lt;)!--banner-info--(&gt;|>)).*?((<|&lt;)!--banner-info--(&gt;|>))/mi', '', $html) ?? $html;
+
+        $host = preg_quote(Str::of(config('app.url'))->after('://')->rtrim('/'), '/');
+
+        $html = preg_replace(
+            '/(?s)<tr\b(?:(?!<tr\b)(?!'.$host.').)*+'.$host.'(?:\/|%2F)deactivate(?:\/|%2F)(?:(?!<\/tr>).)*+<\/tr>/i',
+            '',
+            $html
+        ) ?? $html;
+
+        return Str::of($html);
     }
 
     /**

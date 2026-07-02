@@ -90,7 +90,7 @@ OUTPUT;
     }
 
     #[Test]
-    public function it_reads_encryption_subkeys_from_an_armored_public_key(): void
+    public function it_reads_encryption_subkeys_from_the_configured_gnupg_home(): void
     {
         if (! $this->gpgIsAvailable()) {
             $this->markTestSkipped('gpg is not available');
@@ -136,7 +136,9 @@ OUTPUT;
 
             $this->assertTrue($export->successful(), $export->errorOutput());
 
-            $encrypter = new OpenPGPEncrypter(null, $primaryFingerprint, $gnupgHome, false, $export->output());
+            config(['anonaddy.gnupg_home' => $gnupgHome]);
+
+            $encrypter = new OpenPGPEncrypter(null, $primaryFingerprint, $gnupgHome, false);
 
             $getSubkeyFingerprints = new \ReflectionMethod(OpenPGPEncrypter::class, 'getSubkeyFingerprints');
             $getSubkeyFingerprints->setAccessible(true);

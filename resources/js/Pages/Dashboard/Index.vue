@@ -4,7 +4,7 @@
     <h1 id="primary-heading" class="sr-only">Dashboard</h1>
 
     <div
-      v-if="bandwidthPercentage === 100"
+      v-if="hasBandwidthLimit && bandwidthPercentage >= 100"
       class="text-base border-t-8 rounded text-yellow-800 border-yellow-600 bg-yellow-100 px-3 py-4 mb-4"
       role="alert"
     >
@@ -281,22 +281,28 @@ onMounted(() => {
   })
 })
 
+const hasBandwidthLimit = computed(() => props.bandwidthLimit !== null)
+
 const bandwidthLimitLabel = computed(() => {
-  return props.bandwidthLimit === null ? '∞' : `${props.bandwidthLimit}MB`
+  return hasBandwidthLimit.value ? `${props.bandwidthLimit}MB` : '∞'
 })
 
 const bandwidthPercentage = computed(() => {
-  if (props.bandwidthMb && props.bandwidthLimit !== null) {
-    let percent = ((props.bandwidthMb / props.bandwidthLimit) * 100).toFixed(2)
-
-    return percent > 100 ? 100 : percent
-  } else {
+  if (!hasBandwidthLimit.value || !props.bandwidthMb) {
     return 0
   }
+
+  const percent = (props.bandwidthMb / props.bandwidthLimit) * 100
+
+  return percent > 100 ? 100 : percent
 })
 
 const bandwidthPercentageClass = computed(() => {
-  if (bandwidthPercentage.value === 100) {
+  if (!hasBandwidthLimit.value) {
+    return 'from-cyan-500 to-indigo-500'
+  }
+
+  if (bandwidthPercentage.value >= 100) {
     return 'from-red-200 to-red-500'
   }
 

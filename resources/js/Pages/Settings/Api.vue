@@ -305,6 +305,10 @@ const store = () => {
     return (form.value.errors.name = ['The name field is required.'])
   }
 
+  if (form.value.name.length > 50) {
+    return (form.value.errors.name = ['The name field must not be greater than 50 characters.'])
+  }
+
   if (!['day', 'week', 'month', 'year', null].includes(form.value.expiration)) {
     return (form.value.errors.expiration = ['Invalid expiration given.'])
   }

@@ -57,13 +57,12 @@ class OpenPGPEncrypter
      */
     protected $gnupgHome = null;
 
-    public function __construct($signingKey = null, $recipientKey = null, $gnupgHome = null, $usesProtectedHeaders = false, $recipientPublicKey = null)
+    public function __construct($signingKey = null, $recipientKey = null, $gnupgHome = null, $usesProtectedHeaders = false)
     {
         $this->signingKey = $signingKey;
         $this->recipientKey = $recipientKey;
         $this->gnupgHome = $gnupgHome;
         $this->usesProtectedHeaders = $usesProtectedHeaders;
-        $this->recipientPublicKey = $recipientPublicKey;
         $this->initGNUPG();
     }
 

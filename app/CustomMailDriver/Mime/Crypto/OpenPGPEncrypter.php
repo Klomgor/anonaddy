@@ -337,16 +337,44 @@ class OpenPGPEncrypter
             '--trust-model', 'always',
         ], $args);
 
-        $result = Process::timeout(120)
-            ->env(['GNUPGHOME' => $gnupgHome])
-            ->input($input)
-            ->run($command);
+        $inputFile = $this->writeTemporaryInputFile($input);
 
-        if ($result->failed() || $result->output() === '') {
-            throw new RuntimeException('GPG command failed: '.trim($result->errorOutput() ?: 'unknown error'));
+        try {
+            $process = proc_open(
+                $command,
+                [
+                    0 => ['file', $inputFile, 'r'],
+                    1 => ['pipe', 'w'],
+                    2 => ['pipe', 'w'],
+                ],
+                $pipes,
+                null,
+                ['GNUPGHOME' => $gnupgHome],
+            );
+
+            if (! is_resource($process)) {
+                throw new RuntimeException('Unable to start gpg process');
+            }
+
+            stream_set_timeout($pipes[1], 120);
+            stream_set_timeout($pipes[2], 120);
+
+            $stdout = stream_get_contents($pipes[1]);
+            $stderr = stream_get_contents($pipes[2]);
+
+            fclose($pipes[1]);
+            fclose($pipes[2]);
+
+            $exitCode = proc_close($process);
+
+            if ($exitCode !== 0 || $stdout === '') {
+                throw new RuntimeException('GPG command failed: '.trim($stderr ?: 'unknown error'));
+            }
+
+            return $stdout;
+        } finally {
+            @unlink($inputFile);
         }
-
-        return $result->output();
     }
 
     /**
@@ -471,10 +499,16 @@ class OpenPGPEncrypter
 
     protected function writeTemporaryKeyFile(string $armoredKey): string
     {
-        $keyFile = tempnam(sys_get_temp_dir(), 'gpg-key-');
-        file_put_contents($keyFile, $armoredKey);
+        return $this->writeTemporaryInputFile($armoredKey);
+    }
 
-        return $keyFile;
+    protected function writeTemporaryInputFile(string $contents): string
+    {
+        $inputFile = tempnam(sys_get_temp_dir(), 'gpg-in-');
+        file_put_contents($inputFile, $contents);
+        chmod($inputFile, 0600);
+
+        return $inputFile;
     }
 
     protected function isUsablePrimaryKey(array $key): bool

@@ -360,7 +360,7 @@ class DomainsTest extends TestCase
     {
         $domain = Domain::factory()->create([
             'user_id' => $this->user->id,
-            'domain' => 'daretogain.com',
+            'domain' => 'example.com',
         ]);
 
         $response = $this->json('POST', '/api/v1/domains/'.$domain->id.'/check-sending');
@@ -368,12 +368,12 @@ class DomainsTest extends TestCase
         $response->assertSuccessful();
         $response->assertJson([
             'success' => true,
-            'message' => 'Records manually verified for sending.',
+            'message' => 'Records verified for sending.',
         ]);
 
         $this->assertDatabaseHas('domains', [
             'user_id' => $this->user->id,
-            'domain' => 'daretogain.com',
+            'domain' => 'example.com',
         ]);
         $this->assertNotNull($domain->refresh()->domain_sending_verified_at);
     }

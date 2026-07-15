@@ -252,6 +252,8 @@ class Domain extends Model
     public function checkVerificationForSending()
     {
         if (App::environment('testing')) {
+            $this->markDomainAsVerifiedForSending();
+
             return response()->json([
                 'success' => true,
                 'message' => 'Records verified for sending.',

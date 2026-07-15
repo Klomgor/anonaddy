@@ -88,6 +88,10 @@ class ShowAliasController extends Controller
                 'in:true,false,all',
                 'string',
             ],
+            'label' => [
+                'nullable',
+                'uuid',
+            ],
         ]);
 
         $sort = $request->session()->get('aliasesSort', 'created_at');
@@ -192,8 +196,14 @@ class ShowAliasController extends Controller
             ->when($pinnedFilter, function ($query, $value) {
                 return $query->where('pinned', $value === 'true');
             })
+            ->when($request->input('label'), function ($query, $labelId) {
+                return $query->whereHas('labels', function ($q) use ($labelId) {
+                    $q->where('labels.id', $labelId);
+                });
+            })
             ->with([
                 'recipients:id,email',
+                'labels:id,name,colour',
                 'aliasable.defaultRecipient:id,email',
             ]);
 
@@ -237,15 +247,19 @@ class ShowAliasController extends Controller
             'currentAliasStatus' => $currentAliasStatus,
             'sharedDomains' => user()->sharedDomainOptions(),
             'pinnedFilter' => $pinnedFilter,
+            'labelOptions' => fn () => user()->labels()->orderBy('name')->get(['id', 'name', 'colour']),
+            'selectedLabel' => $request->input('label'),
         ]);
     }
 
     public function edit($id)
     {
-        $alias = user()->aliases()->withTrashed()->findOrFail($id);
+        $alias = user()->aliases()->withTrashed()->with('labels:id,name,colour')->findOrFail($id);
 
         return Inertia::render('Aliases/Edit', [
             'initialAlias' => $alias->only(['id', 'user_id', 'local_part', 'extension', 'domain', 'email', 'active', 'description', 'from_name', 'attached_recipients_only', 'deleted_at', 'updated_at']),
+            'initialLabels' => $alias->labels,
+            'labelOptions' => user()->labels()->orderBy('name')->get(['id', 'name', 'colour']),
         ]);
     }
 }

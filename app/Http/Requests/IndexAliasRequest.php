@@ -25,6 +25,15 @@ class IndexAliasRequest extends FormRequest
     public function rules()
     {
         return [
+            'with' => [
+                'nullable',
+                'in:recipients,labels',
+                'string',
+            ],
+            'filter.label' => [
+                'nullable',
+                'uuid',
+            ],
             'page' => [
                 'nullable',
                 'array',

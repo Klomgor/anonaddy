@@ -172,6 +172,23 @@
           </span>
           <span v-else class="text-grey-500 dark:text-grey-300">0</span>
         </span>
+        <span v-else-if="props.column.field === 'active'" class="flex items-center">
+          <Toggle
+            v-if="!isDefault(props.row.id)"
+            :label="`Active, ${props.row.email}`"
+            v-model="rows[props.row.originalIndex].active"
+            @on="activateRecipient(props.row.id)"
+            @off="deactivateRecipient(props.row.id)"
+          />
+          <Toggle
+            v-else
+            :label="`Active, ${props.row.email}`"
+            v-model="rows[props.row.originalIndex].active"
+            class="!cursor-not-allowed"
+            :disabled="true"
+            title="You cannot deactivate your default recipient"
+          />
+        </span>
         <span v-else-if="props.column.field === 'should_encrypt'">
           <span v-if="props.row.fingerprint" class="flex">
             <Toggle
@@ -549,6 +566,13 @@ const columns = [
     globalSearchDisabled: true,
   },
   {
+    label: 'Active',
+    field: 'active',
+    type: 'boolean',
+    globalSearchDisabled: true,
+    sortable: false,
+  },
+  {
     label: 'Encryption',
     field: 'should_encrypt',
     type: 'boolean',
@@ -802,6 +826,44 @@ const turnOffEncryption = id => {
     })
     .catch(error => {
       errorMessage()
+    })
+}
+
+const activateRecipient = id => {
+  axios
+    .post(
+      `/api/v1/active-recipients`,
+      JSON.stringify({
+        id: id,
+      }),
+      {
+        headers: { 'Content-Type': 'application/json' },
+      },
+    )
+    .then(response => {
+      //
+    })
+    .catch(error => {
+      if (error.response !== undefined) {
+        errorMessage(error.response.data)
+      } else {
+        errorMessage()
+      }
+    })
+}
+
+const deactivateRecipient = id => {
+  axios
+    .delete(`/api/v1/active-recipients/${id}`)
+    .then(response => {
+      //
+    })
+    .catch(error => {
+      if (error.response !== undefined) {
+        errorMessage(error.response.data)
+      } else {
+        errorMessage()
+      }
     })
 }
 

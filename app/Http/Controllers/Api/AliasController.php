@@ -16,7 +16,18 @@ class AliasController extends Controller
 {
     public function index(IndexAliasRequest $request)
     {
-        $aliases = user()->aliases()->with('recipients')
+        $aliases = user()->aliases()
+            ->when($request->input('with') === 'recipients', function ($query) {
+                return $query->with('recipients');
+            })
+            ->when($request->input('with') === 'labels', function ($query) {
+                return $query->with('labels');
+            })
+            ->when($request->input('filter.label'), function ($query, $labelId) {
+                return $query->whereHas('labels', function ($q) use ($labelId) {
+                    $q->where('labels.id', $labelId);
+                });
+            })
             ->when($request->input('recipient'), function ($query, $id) {
                 return $query->usesRecipientWithId($id, $id === user()->default_recipient_id);
             })
@@ -100,7 +111,7 @@ class AliasController extends Controller
     {
         $alias = user()->aliases()->withTrashed()->findOrFail($id);
 
-        return new AliasResource($alias->load('recipients'));
+        return new AliasResource($alias->load(['recipients', 'labels']));
     }
 
     public function store(StoreAliasRequest $request)
@@ -188,7 +199,11 @@ class AliasController extends Controller
             $alias->recipients()->sync($request->recipient_ids);
         }
 
-        return new AliasResource($alias->refresh()->load('recipients'));
+        if ($request->has('label_ids')) {
+            $alias->labels()->sync($request->label_ids ?? []);
+        }
+
+        return new AliasResource($alias->refresh()->load(['recipients', 'labels']));
     }
 
     public function update(UpdateAliasRequest $request, $id)
@@ -205,7 +220,11 @@ class AliasController extends Controller
 
         $alias->save();
 
-        return new AliasResource($alias->refresh()->load('recipients'));
+        if ($request->has('label_ids')) {
+            $alias->labels()->sync($request->label_ids ?? []);
+        }
+
+        return new AliasResource($alias->refresh()->load(['recipients', 'labels']));
     }
 
     public function restore($id)
@@ -214,7 +233,7 @@ class AliasController extends Controller
 
         $alias->restore();
 
-        return new AliasResource($alias->refresh()->load('recipients'));
+        return new AliasResource($alias->refresh()->load(['recipients', 'labels']));
     }
 
     public function destroy($id)

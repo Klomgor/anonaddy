@@ -5,6 +5,7 @@ namespace Tests\Feature\Api;
 use App\Mail\ForwardEmail;
 use App\Models\Alias;
 use App\Models\EmailData;
+use App\Models\Label;
 use App\Models\Rule;
 use App\Services\UserRuleChecker;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
@@ -315,6 +316,137 @@ class RulesTest extends TestCase
             'applied' => 1,
             'last_applied' => now(),
         ]);
+    }
+
+    #[Test]
+    public function user_can_create_rule_with_alias_label_condition(): void
+    {
+        $response = $this->json('POST', '/api/v1/rules', [
+            'name' => 'label rule',
+            'conditions' => [
+                [
+                    'type' => 'alias_label',
+                    'match' => 'is exactly',
+                    'values' => [
+                        'shopping',
+                    ],
+                ],
+            ],
+            'actions' => [
+                [
+                    'type' => 'subject',
+                    'value' => 'Labelled Subject',
+                ],
+            ],
+            'operator' => 'AND',
+            'forwards' => true,
+            'replies' => false,
+            'sends' => false,
+        ]);
+
+        $response->assertStatus(201);
+        $this->assertEquals('alias_label', $response->json('data.conditions.0.type'));
+    }
+
+    #[Test]
+    public function it_applies_rule_when_alias_label_condition_matches(): void
+    {
+        $label = Label::factory()->create([
+            'user_id' => $this->user->id,
+            'name' => 'shopping',
+        ]);
+
+        $rule = Rule::factory()->create([
+            'user_id' => $this->user->id,
+            'conditions' => [
+                [
+                    'type' => 'alias_label',
+                    'match' => 'is exactly',
+                    'values' => [
+                        'Shopping',
+                    ],
+                ],
+            ],
+            'actions' => [
+                [
+                    'type' => 'subject',
+                    'value' => 'Labelled Subject',
+                ],
+            ],
+            'operator' => 'AND',
+            'forwards' => true,
+            'replies' => false,
+            'sends' => false,
+            'applied' => 0,
+            'last_applied' => null,
+        ]);
+
+        $alias = Alias::factory()->create([
+            'user_id' => $this->user->id,
+            'email' => 'ebay@johndoe.'.config('anonaddy.domain'),
+            'local_part' => 'ebay',
+            'domain' => 'johndoe.'.config('anonaddy.domain'),
+        ]);
+        $alias->labels()->attach($label->id);
+
+        $parser = $this->getParser(base_path('tests/emails/email.eml'));
+        $emailData = new EmailData($parser, 'will@anonaddy.com', 1000);
+
+        $ruleIdsAndActions = UserRuleChecker::getRuleIdsAndActionsForForwards($this->user, $emailData, $alias);
+
+        $this->assertArrayHasKey($rule->id, $ruleIdsAndActions);
+
+        $job = new ForwardEmail($alias, $emailData, $this->user->defaultRecipient, false, array_keys($ruleIdsAndActions));
+        $email = $job->build();
+
+        $this->assertEquals('Labelled Subject', $email->subject);
+    }
+
+    #[Test]
+    public function it_does_not_apply_rule_when_alias_label_condition_does_not_match(): void
+    {
+        $label = Label::factory()->create([
+            'user_id' => $this->user->id,
+            'name' => 'shopping',
+        ]);
+
+        Rule::factory()->create([
+            'user_id' => $this->user->id,
+            'conditions' => [
+                [
+                    'type' => 'alias_label',
+                    'match' => 'is exactly',
+                    'values' => [
+                        'work',
+                    ],
+                ],
+            ],
+            'actions' => [
+                [
+                    'type' => 'subject',
+                    'value' => 'Labelled Subject',
+                ],
+            ],
+            'operator' => 'AND',
+            'forwards' => true,
+            'replies' => false,
+            'sends' => false,
+        ]);
+
+        $alias = Alias::factory()->create([
+            'user_id' => $this->user->id,
+            'email' => 'ebay@johndoe.'.config('anonaddy.domain'),
+            'local_part' => 'ebay',
+            'domain' => 'johndoe.'.config('anonaddy.domain'),
+        ]);
+        $alias->labels()->attach($label->id);
+
+        $parser = $this->getParser(base_path('tests/emails/email.eml'));
+        $emailData = new EmailData($parser, 'will@anonaddy.com', 1000);
+
+        $ruleIdsAndActions = UserRuleChecker::getRuleIdsAndActionsForForwards($this->user, $emailData, $alias);
+
+        $this->assertEmpty($ruleIdsAndActions);
     }
 
     #[Test]

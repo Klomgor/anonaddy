@@ -41,6 +41,7 @@ class Recipient extends Model
         'remove_pgp_signatures',
         'fingerprint',
         'pending',
+        'active',
         'email_verified_at',
     ];
 
@@ -54,6 +55,7 @@ class Recipient extends Model
         'remove_pgp_keys' => 'boolean',
         'remove_pgp_signatures' => 'boolean',
         'pending' => 'boolean',
+        'active' => 'boolean',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'email_verified_at' => 'datetime',
@@ -97,6 +99,30 @@ class Recipient extends Model
     public function scopePending(Builder $query): void
     {
         $query->withoutGlobalScope('notPending')->where('pending', true);
+    }
+
+    /**
+     * Scope a query to only include active recipients.
+     */
+    public function scopeActive(Builder $query): void
+    {
+        $query->where('active', true);
+    }
+
+    /**
+     * Deactivate the recipient.
+     */
+    public function deactivate(): void
+    {
+        $this->update(['active' => false]);
+    }
+
+    /**
+     * Activate the recipient.
+     */
+    public function activate(): void
+    {
+        $this->update(['active' => true]);
     }
 
     /**

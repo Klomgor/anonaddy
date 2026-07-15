@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Alias;
 use App\Models\AliasRecipient;
+use App\Models\Label;
 use App\Models\Recipient;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Support\Carbon;
@@ -163,5 +164,42 @@ class ShowAliasesTest extends TestCase
             ->has('recipientOptions', 2)
         );
         $this->assertEquals($aliasRecipient->recipient->email, $response->data('page')['props']['recipientOptions'][1]['email']);
+    }
+
+    #[Test]
+    public function aliases_index_includes_label_options(): void
+    {
+        Label::factory()->create([
+            'user_id' => $this->user->id,
+            'name' => 'shopping',
+            'colour' => '#06b6d4',
+        ]);
+
+        $response = $this->get('/aliases');
+
+        $response->assertSuccessful();
+        $response->assertInertia(fn (Assert $page) => $page
+            ->has('labelOptions', 1)
+            ->where('labelOptions.0.name', 'shopping')
+            ->where('selectedLabel', null)
+        );
+    }
+
+    #[Test]
+    public function user_can_filter_aliases_by_label(): void
+    {
+        $label = Label::factory()->create(['user_id' => $this->user->id]);
+        $withLabel = Alias::factory()->create(['user_id' => $this->user->id]);
+        Alias::factory()->create(['user_id' => $this->user->id]);
+        $withLabel->labels()->attach($label->id);
+
+        $response = $this->get('/aliases?label='.$label->id);
+
+        $response->assertSuccessful();
+        $response->assertInertia(fn (Assert $page) => $page
+            ->has('initialRows.data', 1)
+            ->where('selectedLabel', $label->id)
+            ->where('initialRows.data.0.id', $withLabel->id)
+        );
     }
 }

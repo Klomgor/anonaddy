@@ -43,6 +43,7 @@ class StoreRuleRequest extends FormRequest
                     'sender',
                     'alias',
                     'alias_description',
+                    'alias_label',
                 ]),
             ],
             'conditions.*.match' => [

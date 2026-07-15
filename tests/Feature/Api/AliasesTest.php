@@ -4,6 +4,7 @@ namespace Tests\Feature\Api;
 
 use App\Models\Alias;
 use App\Models\Domain;
+use App\Models\Label;
 use App\Models\Recipient;
 use App\Models\Username;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
@@ -190,6 +191,19 @@ class AliasesTest extends TestCase
         $response->assertSuccessful();
         $this->assertCount(1, $response->json());
         $this->assertEquals($alias->email, $response->json()['data']['email']);
+    }
+
+    #[Test]
+    public function user_can_get_individual_alias_with_labels(): void
+    {
+        $label = Label::factory()->create(['user_id' => $this->user->id]);
+        $alias = Alias::factory()->create(['user_id' => $this->user->id]);
+        $alias->labels()->attach($label->id);
+
+        $response = $this->json('GET', '/api/v1/aliases/'.$alias->id);
+
+        $response->assertSuccessful();
+        $this->assertEquals($label->id, $response->json()['data']['labels'][0]['id']);
     }
 
     #[Test]

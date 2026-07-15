@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\GeneralAliasBulkRequest;
+use App\Http\Requests\LabelsAliasBulkRequest;
 use App\Http\Requests\RecipientsAliasBulkRequest;
 use App\Http\Resources\AliasResource;
 use App\Rules\VerifiedRecipientId;
@@ -257,6 +258,26 @@ class AliasBulkController extends Controller
         return response()->json([
             'message' => $aliasIdsCount === 1 ? 'recipients updated for 1 alias successfully' : "recipients updated for {$aliasIdsCount} aliases successfully",
             'ids' => $aliasIds,
+        ], 200);
+    }
+
+    public function labels(LabelsAliasBulkRequest $request)
+    {
+        $aliases = user()->aliases()->withTrashed()
+            ->whereIn('id', $request->ids)
+            ->get();
+
+        if (! $aliasCount = $aliases->count()) {
+            return response()->json(['message' => 'No aliases found'], 404);
+        }
+
+        foreach ($aliases as $alias) {
+            $alias->labels()->sync($request->label_ids ?? []);
+        }
+
+        return response()->json([
+            'message' => $aliasCount === 1 ? 'labels updated for 1 alias successfully' : "labels updated for {$aliasCount} aliases successfully",
+            'ids' => $aliases->pluck('id'),
         ], 200);
     }
 }

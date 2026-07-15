@@ -186,6 +186,68 @@
             </transition>
           </div>
         </Listbox>
+        <Listbox as="div" v-model="selectedLabelFilter" class="ml-1">
+          <div class="relative">
+            <ListboxButton
+              class="inline-flex items-center text-sm rounded px-2 py-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 text-grey-700 hover:text-grey-900 dark:text-grey-200 dark:hover:text-grey-300"
+            >
+              <span class="sr-only">Label filter</span>
+              <span
+                v-if="selectedLabelFilter.colour"
+                class="mr-1.5 h-3 w-3 shrink-0 rounded-full"
+                :style="{ backgroundColor: selectedLabelFilter.colour }"
+              />
+              <span>{{ selectedLabelFilter.label }}</span>
+              <ChevronDownIcon
+                class="ml-1 h-4 w-4 text-grey-500 dark:text-grey-400"
+                aria-hidden="true"
+              />
+            </ListboxButton>
+            <transition
+              leave-active-class="transition ease-in duration-100"
+              leave-from-class="opacity-100"
+              leave-to-class="opacity-0"
+            >
+              <ListboxOptions
+                class="absolute right-0 left-auto z-20 mt-1 max-h-60 w-48 overflow-auto rounded-md bg-white shadow-lg ring-1 ring-black/5 focus:outline-hidden dark:bg-grey-900"
+              >
+                <ListboxOption
+                  as="template"
+                  v-for="option in labelFilterOptions"
+                  :key="option.value ?? 'all'"
+                  :value="option"
+                  v-slot="{ active, selected }"
+                >
+                  <li
+                    :class="[
+                      active ? 'text-white bg-indigo-500' : 'text-grey-900 dark:text-grey-100',
+                      'cursor-pointer select-none p-2 text-sm',
+                    ]"
+                  >
+                    <div class="flex items-center justify-between gap-2">
+                      <span class="flex items-center gap-2 min-w-0">
+                        <span
+                          v-if="option.colour"
+                          class="h-3 w-3 shrink-0 rounded-full"
+                          :style="{ backgroundColor: option.colour }"
+                        />
+                        <span :class="selected ? 'font-semibold' : 'font-normal'">{{
+                          option.label
+                        }}</span>
+                      </span>
+                      <CheckIcon
+                        v-if="selected"
+                        :class="active ? 'text-white' : 'text-indigo-500 dark:text-grey-100'"
+                        class="h-5 w-5 shrink-0"
+                        aria-hidden="true"
+                      />
+                    </div>
+                  </li>
+                </ListboxOption>
+              </ListboxOptions>
+            </transition>
+          </div>
+        </Listbox>
       </div>
       <div class="flex py-4 px-4 sm:px-6 lg:px-8">
         <div class="flex items-center">
@@ -312,6 +374,18 @@
             "
           >
             Edit Recipients <loader v-if="bulkEditAliasRecipientsLoading" />
+          </button>
+          <button
+            type="button"
+            class="inline-flex items-center rounded border border-grey-300 bg-white px-2.5 py-1.5 text-xs font-medium text-grey-700 shadow-sm hover:bg-grey-50 focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-30 whitespace-nowrap dark:border-grey-600 dark:bg-grey-800 dark:text-grey-200 dark:hover:bg-grey-700"
+            :disabled="bulkEditAliasLabelsLoading"
+            @click="
+              selectedRows.length === 1
+                ? openAliasLabelsModal(selectedRows[0])
+                : openBulkAliasLabelsModal()
+            "
+          >
+            Edit Labels <loader v-if="bulkEditAliasLabelsLoading" />
           </button>
           <button
             type="button"
@@ -548,6 +622,33 @@
                 >default</span
               >
               <button @click="openAliasRecipientsModal(props.row)" class="ml-2">
+                <icon name="edit" class="inline-block w-6 h-6 text-grey-300 fill-current" />
+              </button>
+            </span>
+            <span
+              v-else-if="props.column.field == 'labels'"
+              class="flex flex-wrap items-center justify-center gap-1 max-w-[10rem]"
+            >
+              <template v-if="(props.row.labels || []).length">
+                <span
+                  v-for="label in props.row.labels"
+                  :key="label.id"
+                  class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs text-grey-800 dark:text-grey-100"
+                  :style="{ backgroundColor: label.colour + '33' }"
+                >
+                  <span
+                    class="h-2 w-2 shrink-0 rounded-full"
+                    :style="{ backgroundColor: label.colour }"
+                  />
+                  {{ $filters.truncate(label.name, 12) }}
+                </span>
+              </template>
+              <span v-else class="text-grey-400">-</span>
+              <button
+                @click="openAliasLabelsModal(props.row)"
+                class="ml-1"
+                aria-label="Edit labels"
+              >
                 <icon name="edit" class="inline-block w-6 h-6 text-grey-300 fill-current" />
               </button>
             </span>
@@ -856,6 +957,29 @@
         >
         </multiselect>
 
+        <label
+          for="alias_label_ids"
+          class="block font-medium leading-6 text-grey-600 dark:text-white text-sm my-2"
+        >
+          Labels
+        </label>
+        <multiselect
+          id="alias_label_ids"
+          v-model="createAliasLabelIds"
+          mode="tags"
+          value-prop="id"
+          :options="labelOptionsList"
+          :close-on-select="true"
+          :clear-on-select="false"
+          :searchable="true"
+          :max="10"
+          class="p-0"
+          placeholder="Select label(s) (optional)..."
+          label="name"
+          track-by="name"
+        >
+        </multiselect>
+
         <div class="mt-6 flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
           <button
             @click="createNewAlias"
@@ -960,6 +1084,108 @@
         </div>
       </template>
     </Modal>
+
+    <Modal :open="editAliasLabelsModalOpen" @close="closeAliasLabelsModal">
+      <template v-slot:title> Update Alias Labels </template>
+      <template v-slot:content>
+        <p class="mt-4 mb-3 text-grey-700 dark:text-grey-200">
+          Select labels for this alias. You can choose up to 10 labels.
+        </p>
+        <button
+          type="button"
+          class="mb-2 text-sm text-indigo-500 hover:text-indigo-800 dark:text-indigo-200 dark:hover:text-indigo-300"
+          @click="openManageLabelsModal('single')"
+        >
+          Click here to manage labels
+        </button>
+        <multiselect
+          v-model="aliasLabelsToEdit"
+          mode="tags"
+          value-prop="id"
+          :options="labelOptionsList"
+          :close-on-select="true"
+          :clear-on-select="false"
+          :searchable="true"
+          :max="10"
+          class="p-0"
+          placeholder="Select label(s)"
+          label="name"
+          track-by="name"
+        />
+        <div class="mt-6 flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+          <button
+            type="button"
+            @click="editAliasLabels()"
+            class="px-4 py-3 text-cyan-900 font-semibold bg-cyan-400 hover:bg-cyan-300 border border-transparent rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:cursor-not-allowed"
+            :disabled="editAliasLabelsLoading"
+          >
+            Update Labels
+            <loader v-if="editAliasLabelsLoading" />
+          </button>
+          <button
+            @click="closeAliasLabelsModal()"
+            class="px-4 py-3 text-grey-800 font-semibold bg-white hover:bg-grey-50 dark:text-grey-100 dark:hover:bg-grey-700 dark:bg-grey-600 dark:border-grey-700 border border-grey-100 rounded"
+          >
+            Cancel
+          </button>
+        </div>
+      </template>
+    </Modal>
+
+    <Modal :open="bulkEditAliasLabelsModalOpen" @close="closeBulkAliasLabelsModal()">
+      <template v-slot:title> Update Labels for Aliases </template>
+      <template v-slot:content>
+        <p class="my-4 text-grey-700 dark:text-grey-200">
+          Select labels for these <b>{{ selectedRowIds.length }}</b> aliases. You can choose up to
+          10 labels per alias.
+        </p>
+        <button
+          type="button"
+          class="mb-2 text-sm text-indigo-600 hover:text-indigo-800 dark:text-indigo-400"
+          @click="openManageLabelsModal('bulk')"
+        >
+          Click here to manage labels
+        </button>
+        <multiselect
+          v-model="aliasLabelsToEdit"
+          mode="tags"
+          value-prop="id"
+          :options="labelOptionsList"
+          :close-on-select="true"
+          :clear-on-select="false"
+          :searchable="true"
+          :max="10"
+          class="p-0"
+          placeholder="Select label(s)"
+          label="name"
+          track-by="name"
+        />
+        <div class="mt-6 flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+          <button
+            type="button"
+            @click="bulkEditAliasLabels()"
+            class="px-4 py-3 text-cyan-900 font-semibold bg-cyan-400 hover:bg-cyan-300 border border-transparent rounded disabled:cursor-not-allowed"
+            :disabled="bulkEditAliasLabelsLoading"
+          >
+            Update Labels
+            <loader v-if="bulkEditAliasLabelsLoading" />
+          </button>
+          <button
+            @click="closeBulkAliasLabelsModal()"
+            class="px-4 py-3 text-grey-800 font-semibold bg-white border border-grey-100 rounded dark:bg-grey-600 dark:text-grey-100"
+          >
+            Cancel
+          </button>
+        </div>
+      </template>
+    </Modal>
+
+    <ManageAliasLabelsModal
+      :open="manageLabelsModalOpen"
+      :labels="labelOptionsList"
+      @close="closeManageLabelsModal"
+      @updated="refreshLabelOptions"
+    />
 
     <Modal :open="restoreAliasModalOpen" @close="closeRestoreModal">
       <template v-slot:title> Restore alias </template>
@@ -1339,6 +1565,7 @@
 <script setup>
 import { ref, watch, computed, onMounted } from 'vue'
 import { router, Head, Link } from '@inertiajs/vue3'
+import ManageAliasLabelsModal from '../../Components/ManageAliasLabelsModal.vue'
 import Modal from '../../Components/Modal.vue'
 import Toggle from '../../Components/Toggle.vue'
 import PaginationControls from '../../Components/PaginationControls.vue'
@@ -1417,6 +1644,14 @@ const props = defineProps({
     type: String,
     default: null,
   },
+  labelOptions: {
+    type: Array,
+    default: () => [],
+  },
+  selectedLabel: {
+    type: String,
+    default: null,
+  },
 })
 
 const rows = ref(props.initialRows.data)
@@ -1456,6 +1691,28 @@ const restoreAliasLoading = ref(false)
 const restoreAliasModalOpen = ref(false)
 const editAliasRecipientsLoading = ref(false)
 const editAliasRecipientsModalOpen = ref(false)
+const editAliasLabelsModalOpen = ref(false)
+const bulkEditAliasLabelsModalOpen = ref(false)
+const manageLabelsModalOpen = ref(false)
+const manageLabelsReturnTo = ref(null)
+const editAliasLabelsLoading = ref(false)
+const bulkEditAliasLabelsLoading = ref(false)
+const labelsAliasToEdit = ref({})
+const aliasLabelsToEdit = ref([])
+const createAliasLabelIds = ref([])
+const labelOptionsList = ref([...props.labelOptions])
+const labelFilterOptions = computed(() => [
+  { value: null, label: 'All labels', colour: null },
+  ...labelOptionsList.value.map(label => ({
+    value: label.id,
+    label: label.name,
+    colour: label.colour,
+  })),
+])
+const selectedLabelFilter = ref(
+  labelFilterOptions.value.find(option => option.value === props.selectedLabel) ??
+    labelFilterOptions.value[0],
+)
 const createAliasModalOpen = ref(false)
 const newAliasLocalPart = ref('')
 const newAliasExtension = ref('')
@@ -1659,6 +1916,11 @@ const columns = [
     tdClass: 'text-center',
   },
   {
+    label: 'Labels',
+    field: 'labels',
+    tdClass: 'text-center',
+  },
+  {
     label: 'Forwards/Blocks',
     field: 'emails_forwarded',
     type: 'number',
@@ -1746,6 +2008,57 @@ watch(
   { deep: true },
 )
 
+const applyLabelFilter = labelId => {
+  const params = { ...route().params }
+  if (labelId) {
+    params.label = labelId
+  } else {
+    delete params.label
+  }
+  router.visit(route('aliases.index', params), {
+    only: [
+      'initialRows',
+      'search',
+      'sort',
+      'sortDirection',
+      'currentAliasStatus',
+      'pinnedFilter',
+      'labelOptions',
+      'selectedLabel',
+    ],
+  })
+}
+
+watch(
+  () => props.labelOptions,
+  value => {
+    labelOptionsList.value = [...value]
+    const match = labelFilterOptions.value.find(option => option.value === props.selectedLabel)
+    if (match) {
+      selectedLabelFilter.value = match
+    }
+  },
+  { deep: true },
+)
+
+watch(
+  () => props.selectedLabel,
+  value => {
+    selectedLabelFilter.value =
+      labelFilterOptions.value.find(option => option.value === value) ?? labelFilterOptions.value[0]
+  },
+)
+
+watch(
+  selectedLabelFilter,
+  (newOpt, oldOpt) => {
+    if (!oldOpt || newOpt.value === oldOpt.value) return
+    if (newOpt.value === props.selectedLabel) return
+    applyLabelFilter(newOpt.value)
+  },
+  { deep: true },
+)
+
 onMounted(() => {
   debounceToolips()
 })
@@ -1773,6 +2086,7 @@ const createNewAlias = () => {
         description: createAliasDescription.value,
         format: createAliasFormat.value,
         recipient_ids: createAliasRecipientIds.value,
+        label_ids: createAliasLabelIds.value,
       }),
       {
         headers: { 'Content-Type': 'application/json' },
@@ -1795,6 +2109,7 @@ const createNewAlias = () => {
           createAliasLocalPart.value = ''
           createAliasDescription.value = ''
           createAliasRecipientIds.value = []
+          createAliasLabelIds.value = []
           createAliasModalOpen.value = false
           newAliasLocalPart.value = data.data.local_part
           newAliasExtension.value = data.data.extension
@@ -2705,6 +3020,130 @@ const closeBulkAliasRecipientsModal = () => {
   bulkEditAliasRecipientsModalOpen.value = false
   _.delay(() => (aliasRecipientsToEdit.value = []), 300)
   debounceToolips()
+}
+
+const refreshLabelOptions = () => {
+  router.reload({
+    only: ['labelOptions', 'initialRows', 'selectedLabel'],
+    onSuccess: page => {
+      labelOptionsList.value = [...page.props.labelOptions]
+      rows.value = page.props.initialRows.data
+      debounceToolips()
+    },
+  })
+}
+
+const openManageLabelsModal = returnTo => {
+  manageLabelsReturnTo.value = returnTo
+
+  if (returnTo === 'single') {
+    editAliasLabelsModalOpen.value = false
+  } else if (returnTo === 'bulk') {
+    bulkEditAliasLabelsModalOpen.value = false
+  }
+
+  manageLabelsModalOpen.value = true
+}
+
+const closeManageLabelsModal = () => {
+  manageLabelsModalOpen.value = false
+
+  const returnTo = manageLabelsReturnTo.value
+  manageLabelsReturnTo.value = null
+
+  if (returnTo === 'single') {
+    editAliasLabelsModalOpen.value = true
+  } else if (returnTo === 'bulk') {
+    bulkEditAliasLabelsModalOpen.value = true
+  }
+}
+
+const openAliasLabelsModal = alias => {
+  editAliasLabelsModalOpen.value = true
+  labelsAliasToEdit.value = alias
+  aliasLabelsToEdit.value = _.map(alias.labels || [], label => label.id)
+}
+
+const closeAliasLabelsModal = () => {
+  editAliasLabelsModalOpen.value = false
+  _.delay(() => {
+    aliasLabelsToEdit.value = []
+    labelsAliasToEdit.value = {}
+  }, 300)
+  debounceToolips()
+}
+
+const editAliasLabels = () => {
+  editAliasLabelsLoading.value = true
+
+  axios
+    .post('/api/v1/alias-labels', {
+      alias_id: labelsAliasToEdit.value.id,
+      label_ids: aliasLabelsToEdit.value,
+    })
+    .then(response => {
+      const index = _.findIndex(rows.value, ['id', labelsAliasToEdit.value.id])
+      if (index !== -1) {
+        rows.value[index].labels = response.data.data.labels
+      }
+      editAliasLabelsLoading.value = false
+      closeAliasLabelsModal()
+      successMessage('Alias labels updated')
+    })
+    .catch(error => {
+      editAliasLabelsLoading.value = false
+      if ([429, 403].includes(error.response?.status)) {
+        errorMessage(error.response.data)
+      } else if (error.response?.status === 422) {
+        errorMessage(error.response.data.message)
+      } else {
+        errorMessage()
+      }
+    })
+}
+
+const openBulkAliasLabelsModal = () => {
+  bulkEditAliasLabelsModalOpen.value = true
+  aliasLabelsToEdit.value = []
+}
+
+const closeBulkAliasLabelsModal = () => {
+  bulkEditAliasLabelsModalOpen.value = false
+  _.delay(() => (aliasLabelsToEdit.value = []), 300)
+  debounceToolips()
+}
+
+const bulkEditAliasLabels = () => {
+  bulkEditAliasLabelsLoading.value = true
+
+  axios
+    .post('/api/v1/aliases/labels/bulk', {
+      ids: selectedRowIds.value,
+      label_ids: aliasLabelsToEdit.value,
+    })
+    .then(response => {
+      router.reload({
+        only: ['initialRows'],
+        onSuccess: page => {
+          rows.value = page.props.initialRows.data
+          bulkEditAliasLabelsLoading.value = false
+          bulkEditAliasLabelsModalOpen.value = false
+          selectedRowIds.value = []
+          successMessage(response.data.message)
+        },
+      })
+    })
+    .catch(error => {
+      bulkEditAliasLabelsLoading.value = false
+      bulkEditAliasLabelsModalOpen.value = false
+      if (error.response?.status === 429) {
+        errorMessage('Too many bulk requests, please wait a little while before trying again')
+      } else if (error.response?.data?.message !== undefined) {
+        errorMessage(error.response.data.message)
+      } else {
+        errorMessage()
+      }
+    })
 }
 
 const addTooltips = () => {

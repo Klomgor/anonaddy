@@ -90,6 +90,14 @@ class EmailData
             $this->sender = $sender;
         }
 
+        // On resend, prefer the stored original sender header when the failed delivery has no sender
+        if ($resend && ! is_string($this->sender)) {
+            $originalSender = $parser->getHeader('X-AnonAddy-Original-Sender');
+            if (is_string($originalSender) && $originalSender !== '') {
+                $this->sender = $originalSender;
+            }
+        }
+
         if (isset($parser->getAddresses('from')[0]['display'])) {
             $this->display_from = base64_encode($parser->getAddresses('from')[0]['display']);
         } else {
@@ -136,11 +144,12 @@ class EmailData
 
         if ($resend) {
             $this->originalFromHeader = base64_encode($parser->getHeader('X-AnonAddy-Original-From-Header'));
-            $this->originalEnvelopeFrom = $parser->getHeader('X-AnonAddy-Original-Envelope-From');
+            $originalEnvelopeFrom = $parser->getHeader('X-AnonAddy-Original-Envelope-From');
+            $this->originalEnvelopeFrom = is_string($originalEnvelopeFrom) ? $originalEnvelopeFrom : null;
             $this->originalReplyToHeader = base64_encode($parser->getHeader('X-AnonAddy-Original-Reply-To-Header'));
         } else {
             $this->originalFromHeader = base64_encode($parser->getHeader('From'));
-            $this->originalEnvelopeFrom = $sender;
+            $this->originalEnvelopeFrom = is_string($sender) ? $sender : null;
             $this->originalReplyToHeader = base64_encode($parser->getHeader('Reply-To'));
         }
 

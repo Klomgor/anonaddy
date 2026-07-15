@@ -852,7 +852,7 @@ const checkRecords = domain => {
   checkRecordsLoading.value = true
 
   axios
-    .get(`/domains/${domain.id}/check-sending`)
+    .post(`/api/v1/domains/${domain.id}/check-sending`)
     .then(({ data }) => {
       checkRecordsLoading.value = false
 

@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Label;
+use App\Rules\UserLabelId;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateAliasRequest extends FormRequest
@@ -26,6 +28,14 @@ class UpdateAliasRequest extends FormRequest
         return [
             'description' => 'nullable|max:200',
             'from_name' => 'nullable|string|max:50',
+            'label_ids' => [
+                'bail',
+                'nullable',
+                'array',
+                'max:'.Label::LABELS_PER_ALIAS_LIMIT,
+                new UserLabelId,
+            ],
+            'label_ids.*' => 'required|uuid|distinct',
         ];
     }
 }

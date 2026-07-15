@@ -112,6 +112,36 @@
         </div>
 
         <div class="pt-8">
+          <div class="block text-lg font-medium text-grey-700 dark:text-grey-200">Labels</div>
+          <p class="mt-1 text-base text-grey-700 dark:text-grey-200">
+            Organise this alias with up to 10 labels.
+          </p>
+          <multiselect
+            v-model="aliasLabelIds"
+            mode="tags"
+            value-prop="id"
+            :options="labelOptions"
+            :close-on-select="true"
+            :clear-on-select="false"
+            :searchable="true"
+            :max="10"
+            class="p-0 mt-4"
+            placeholder="Select label(s)"
+            label="name"
+            track-by="name"
+          />
+          <button
+            type="button"
+            class="mt-4 bg-cyan-400 w-full hover:bg-cyan-300 text-cyan-900 font-bold py-3 px-4 rounded disabled:cursor-not-allowed"
+            :disabled="labelsLoading"
+            @click="updateAliasLabels"
+          >
+            Update Labels
+            <loader v-if="labelsLoading" />
+          </button>
+        </div>
+
+        <div class="pt-8">
           <label
             for="can_reply_send"
             class="block font-medium text-grey-700 dark:text-grey-200 text-lg pointer-events-none cursor-default"
@@ -151,6 +181,7 @@ import { notify } from '@kyvg/vue3-notification'
 import { roundArrow } from 'tippy.js'
 import tippy from 'tippy.js'
 import { ExclamationCircleIcon } from '@heroicons/vue/20/solid'
+import Multiselect from '@vueform/multiselect'
 import Toggle from '../../Components/Toggle.vue'
 
 const props = defineProps({
@@ -158,9 +189,19 @@ const props = defineProps({
     type: Object,
     required: true,
   },
+  initialLabels: {
+    type: Array,
+    default: () => [],
+  },
+  labelOptions: {
+    type: Array,
+    default: () => [],
+  },
 })
 
 const alias = ref(props.initialAlias)
+const aliasLabelIds = ref(_.map(props.initialLabels, label => label.id))
+const labelsLoading = ref(false)
 
 const errors = ref({})
 
@@ -197,6 +238,30 @@ const editFromName = () => {
     .catch(error => {
       alias.value.fromNameLoading = false
       errorMessage()
+    })
+}
+
+const updateAliasLabels = () => {
+  labelsLoading.value = true
+
+  axios
+    .post('/api/v1/alias-labels', {
+      alias_id: alias.value.id,
+      label_ids: aliasLabelIds.value,
+    })
+    .then(() => {
+      labelsLoading.value = false
+      successMessage('Alias labels updated')
+    })
+    .catch(error => {
+      labelsLoading.value = false
+      if ([403, 429].includes(error.response?.status)) {
+        errorMessage(error.response.data)
+      } else if (error.response?.status === 422) {
+        errorMessage(error.response.data.message)
+      } else {
+        errorMessage()
+      }
     })
 }
 

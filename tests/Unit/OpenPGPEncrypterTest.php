@@ -157,6 +157,100 @@ OUTPUT;
         }
     }
 
+    #[Test]
+    public function it_encrypts_large_plaintext_without_deadlocking(): void
+    {
+        if (! $this->gpgIsAvailable()) {
+            $this->markTestSkipped('gpg is not available');
+        }
+
+        if (! extension_loaded('gnupg')) {
+            $this->markTestSkipped('gnupg extension is not available');
+        }
+
+        $gnupgHome = sys_get_temp_dir().'/gpg-openpgp-encrypter-large-test-'.uniqid();
+        mkdir($gnupgHome, 0700, true);
+        $originalGnupgHome = getenv('GNUPGHOME');
+
+        try {
+            [$primaryFingerprint, $encryptFingerprint] = $this->createEncryptionKeyPair($gnupgHome);
+
+            config(['anonaddy.gnupg_home' => $gnupgHome]);
+
+            $encrypter = new OpenPGPEncrypter(null, $primaryFingerprint, $gnupgHome, false);
+
+            $runGpgCommand = new \ReflectionMethod(OpenPGPEncrypter::class, 'runGpgCommand');
+            $runGpgCommand->setAccessible(true);
+
+            $largeInput = str_repeat('A', 700 * 1024);
+
+            $start = microtime(true);
+
+            $encrypted = $runGpgCommand->invoke($encrypter, [
+                '--encrypt',
+                '-r', $encryptFingerprint.'!',
+            ], $largeInput);
+
+            $duration = microtime(true) - $start;
+
+            $this->assertLessThan(30, $duration);
+            $this->assertStringContainsString('BEGIN PGP MESSAGE', $encrypted);
+        } finally {
+            $this->deleteDirectory($gnupgHome);
+
+            if ($originalGnupgHome === false) {
+                putenv('GNUPGHOME');
+            } else {
+                putenv('GNUPGHOME='.$originalGnupgHome);
+            }
+        }
+    }
+
+    /**
+     * @return array{0: string, 1: string}
+     */
+    protected function createEncryptionKeyPair(string $gnupgHome): array
+    {
+        $generate = Process::timeout(30)
+            ->env(['GNUPGHOME' => $gnupgHome])
+            ->run([
+                'gpg', '--homedir', $gnupgHome, '--batch', '--pinentry-mode', 'loopback', '--passphrase', 'testpass',
+                '--quick-generate-key', 'Large Encrypt Test <large-encrypt@test.local>', 'ed25519', 'cert', '0',
+            ]);
+
+        $this->assertTrue($generate->successful(), $generate->errorOutput());
+
+        $listKeys = Process::timeout(30)
+            ->env(['GNUPGHOME' => $gnupgHome])
+            ->run(['gpg', '--homedir', $gnupgHome, '--list-keys', '--with-colons', 'large-encrypt@test.local']);
+
+        $this->assertTrue($listKeys->successful(), $listKeys->errorOutput());
+
+        preg_match('/^fpr:[^:]*:[^:]*:[^:]*:[^:]*:[^:]*:[^:]*:[^:]*:[^:]*:([A-F0-9]+):/m', $listKeys->output(), $matches);
+        $primaryFingerprint = $matches[1] ?? null;
+        $this->assertNotNull($primaryFingerprint);
+
+        $addKey = Process::timeout(30)
+            ->env(['GNUPGHOME' => $gnupgHome])
+            ->run([
+                'gpg', '--homedir', $gnupgHome, '--batch', '--pinentry-mode', 'loopback', '--passphrase', 'testpass',
+                '--quick-add-key', $primaryFingerprint, 'cv25519', 'encrypt', '0',
+            ]);
+
+        $this->assertTrue($addKey->successful(), $addKey->errorOutput());
+
+        $listSubkeys = Process::timeout(30)
+            ->env(['GNUPGHOME' => $gnupgHome])
+            ->run(['gpg', '--homedir', $gnupgHome, '--list-keys', '--with-colons', 'large-encrypt@test.local']);
+
+        preg_match_all('/^fpr:[^:]*:[^:]*:[^:]*:[^:]*:[^:]*:[^:]*:[^:]*:[^:]*:([A-F0-9]+):/m', $listSubkeys->output(), $fingerprintMatches);
+
+        $encryptFingerprint = $fingerprintMatches[1][1] ?? null;
+        $this->assertNotNull($encryptFingerprint);
+
+        return [$primaryFingerprint, $encryptFingerprint];
+    }
+
     protected function gpgIsAvailable(): bool
     {
         $result = Process::timeout(5)->run(['gpg', '--version']);

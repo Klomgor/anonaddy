@@ -164,4 +164,35 @@ class AliasTest extends TestCase
         $this->assertCount(4, $alias->verifiedRecipientsOrDefault());
         $this->assertCount(5, $alias->recipients);
     }
+
+    #[Test]
+    public function alias_excludes_disabled_verified_recipients()
+    {
+        $alias = Alias::factory()->create([
+            'user_id' => $this->user->id,
+        ]);
+
+        $activeRecipient = Recipient::factory()->create([
+            'user_id' => $this->user->id,
+            'active' => true,
+        ]);
+
+        $disabledRecipient = Recipient::factory()->create([
+            'user_id' => $this->user->id,
+            'active' => false,
+        ]);
+
+        AliasRecipient::create([
+            'alias' => $alias,
+            'recipient' => $activeRecipient,
+        ]);
+
+        AliasRecipient::create([
+            'alias' => $alias,
+            'recipient' => $disabledRecipient,
+        ]);
+
+        $this->assertCount(1, $alias->verifiedRecipients);
+        $this->assertCount(2, $alias->recipients);
+    }
 }

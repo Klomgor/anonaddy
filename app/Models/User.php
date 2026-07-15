@@ -269,6 +269,14 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * Get all of the user's alias labels.
+     */
+    public function labels()
+    {
+        return $this->hasMany(Label::class);
+    }
+
+    /**
      * Get all of the user's blocked senders (email or domain blocklist).
      */
     public function blockedSenders()
@@ -353,7 +361,9 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function verifiedRecipients()
     {
-        return $this->recipients()->whereNotNull('email_verified_at');
+        return $this->recipients()
+            ->whereNotNull('email_verified_at')
+            ->where('active', true);
     }
 
     /**
@@ -538,6 +548,16 @@ class User extends Authenticatable implements MustVerifyEmail
                     return true;
                 }
             );
+    }
+
+    public function labelLimit(): int
+    {
+        return Label::LABEL_LIMIT;
+    }
+
+    public function hasReachedLabelLimit(): bool
+    {
+        return $this->labels()->count() >= $this->labelLimit();
     }
 
     public function hasReachedUsernameLimit()

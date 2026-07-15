@@ -25,6 +25,7 @@ class RecipientFactory extends Factory
             'user_id' => $this->faker->uuid,
             'email' => $this->faker->safeEmail,
             'email_verified_at' => now(),
+            'active' => true,
         ];
     }
 }

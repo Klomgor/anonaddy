@@ -132,6 +132,11 @@ class Alias extends Model
         return $this->belongsToMany(Recipient::class, 'alias_recipients')->withPivot('id')->using(AliasRecipient::class);
     }
 
+    public function labels()
+    {
+        return $this->belongsToMany(Label::class, 'alias_label');
+    }
+
     /**
      * Detach all recipients from this alias.
      *
@@ -179,7 +184,9 @@ class Alias extends Model
      */
     public function verifiedRecipients()
     {
-        return $this->recipients()->whereNotNull('email_verified_at');
+        return $this->recipients()
+            ->whereNotNull('email_verified_at')
+            ->where('active', true);
     }
 
     /**

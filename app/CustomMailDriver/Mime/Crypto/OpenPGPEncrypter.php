@@ -127,30 +127,11 @@ class OpenPGPEncrypter
             $originalMessage->text($headers->get('Subject')->toString());
         }
 
-        $lines = preg_split('/(\r\n|\r|\n)/', rtrim($originalMessage->toString()));
-
-        // Check if using protected headers or not
         if ($this->usesProtectedHeaders) {
-            $protectedHeadersSet = false;
-            for ($i = 0; $i < count($lines); $i++) {
-                if (Str::startsWith(strtolower($lines[$i]), 'content-type: text/plain') || Str::startsWith(strtolower($lines[$i]), 'content-type: multipart/')) {
-                    $lines[$i] = rtrim($lines[$i])."; protected-headers=\"v1\"\r\n";
-                    if (! $protectedHeadersSet) {
-                        $headers->setHeaderBody('Text', 'Subject', '...');
-                        $protectedHeadersSet = true;
-                    }
-                } else {
-                    $lines[$i] = rtrim($lines[$i])."\r\n";
-                }
-            }
-        } else {
-            for ($i = 0; $i < count($lines); $i++) {
-                $lines[$i] = rtrim($lines[$i])."\r\n";
-            }
+            $headers->setHeaderBody('Text', 'Subject', '...');
         }
 
-        // Remove excess trailing newlines (RFC3156 section 5.4)
-        $originalBody = rtrim(implode('', $lines))."\r\n";
+        $originalBody = PgpMimeEncryptionPlaintext::fromEmail($originalMessage, $this->usesProtectedHeaders);
 
         // Create encrypted body from original message
         $encryptedBody = $this->pgpEncryptAndSignString($originalBody, $this->recipientKey, $this->signingKey);

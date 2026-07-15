@@ -91,9 +91,43 @@ class UserRuleChecker
                 return $this->conditionSatisfied($this->alias->email, $condition);
             case 'alias_description':
                 return $this->conditionSatisfied($this->alias->description, $condition);
+            case 'alias_label':
+                return $this->aliasLabelConditionSatisfied($condition);
             default:
                 return false;
         }
+    }
+
+    protected function aliasLabelConditionSatisfied(array $condition): bool
+    {
+        if (! $this->alias->relationLoaded('labels')) {
+            $this->alias->load('labels');
+        }
+
+        $labelNames = $this->alias->labels->pluck('name');
+
+        if ($labelNames->isEmpty()) {
+            return $this->emptyAliasLabelConditionSatisfied($condition);
+        }
+
+        $condition = array_merge($condition, [
+            'values' => collect($condition['values'])->map(fn ($value) => strtolower($value))->all(),
+        ]);
+
+        return $labelNames->contains(function ($labelName) use ($condition) {
+            return $this->conditionSatisfied($labelName, $condition);
+        });
+    }
+
+    protected function emptyAliasLabelConditionSatisfied(array $condition): bool
+    {
+        return in_array($condition['match'], [
+            'is not',
+            'does not contain',
+            'does not start with',
+            'does not end with',
+            'does not match regex',
+        ], true);
     }
 
     /**

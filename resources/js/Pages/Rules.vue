@@ -91,8 +91,8 @@
                   <Toggle
                     :label="`Active, ${element.name}`"
                     v-model="element.active"
-                    @on="activateRule(element.id)"
-                    @off="deactivateRule(element.id)"
+                    @on="activateRule(element)"
+                    @off="deactivateRule(element)"
                   />
                 </td>
                 <td scope="row" class="p-3">
@@ -302,16 +302,18 @@
                   />
                 </div>
               </div>
-              <div class="mt-2 text-left">
+              <div class="mt-2 max-w-full text-left">
                 <span
                   v-for="(value, index) in createRuleObject.conditions[key].values"
                   :key="index"
                 >
-                  <span class="bg-green-200 text-sm font-semibold rounded-sm pl-1 text-nowrap">
-                    {{ value }}
+                  <span
+                    class="inline-flex max-w-full min-w-0 items-center bg-green-200 text-sm font-semibold rounded-sm pl-1"
+                  >
+                    <span class="truncate">{{ value }}</span>
                     <icon
                       name="close"
-                      class="inline-block w-4 h-4 text-grey-900 fill-current cursor-pointer"
+                      class="inline-block w-4 h-4 shrink-0 text-grey-900 fill-current cursor-pointer"
                       @click="createRuleObject.conditions[key].values.splice(index, 1)"
                     />
                   </span>
@@ -653,13 +655,15 @@
                   />
                 </div>
               </div>
-              <div class="mt-2 text-left">
+              <div class="mt-2 max-w-full text-left">
                 <span v-for="(value, index) in editRuleObject.conditions[key].values" :key="index">
-                  <span class="bg-green-200 text-sm font-semibold rounded-sm pl-1 text-nowrap">
-                    {{ value }}
+                  <span
+                    class="inline-flex max-w-full min-w-0 items-center bg-green-200 text-sm font-semibold rounded-sm pl-1"
+                  >
+                    <span class="truncate">{{ value }}</span>
                     <icon
                       name="close"
-                      class="inline-block w-4 h-4 text-grey-900 fill-current cursor-pointer"
+                      class="inline-block w-4 h-4 shrink-0 text-grey-900 fill-current cursor-pointer"
                       @click="editRuleObject.conditions[key].values.splice(index, 1)"
                     />
                   </span>
@@ -1015,6 +1019,10 @@ const conditionTypeOptions = [
     value: 'alias_description',
     label: 'alias description',
   },
+  {
+    value: 'alias_label',
+    label: 'alias label',
+  },
 ]
 const actionTypeOptions = [
   {
@@ -1250,21 +1258,22 @@ const deleteRule = id => {
     })
 }
 
-const activateRule = id => {
+const activateRule = rule => {
   axios
     .post(
       `/api/v1/active-rules`,
       JSON.stringify({
-        id: id,
+        id: rule.id,
       }),
       {
         headers: { 'Content-Type': 'application/json' },
       },
     )
     .then(response => {
-      //
+      rule.active = true
     })
     .catch(error => {
+      rule.active = false
       if (error.response !== undefined) {
         errorMessage(error.response.data)
       } else {
@@ -1273,13 +1282,14 @@ const activateRule = id => {
     })
 }
 
-const deactivateRule = id => {
+const deactivateRule = rule => {
   axios
-    .delete(`/api/v1/active-rules/${id}`)
+    .delete(`/api/v1/active-rules/${rule.id}`)
     .then(response => {
-      //
+      rule.active = false
     })
     .catch(error => {
+      rule.active = true
       if (error.response !== undefined) {
         errorMessage(error.response.data)
       } else {
@@ -1315,7 +1325,10 @@ const reorderRules = (displaySuccess = true) => {
 
 const conditionMatchOptions = (object, key) => {
   if (
-    _.includes(['sender', 'subject', 'alias', 'alias_description'], object.conditions[key].type)
+    _.includes(
+      ['sender', 'subject', 'alias', 'alias_description', 'alias_label'],
+      object.conditions[key].type,
+    )
   ) {
     return [
       'contains',

@@ -3,10 +3,12 @@
 use App\Http\Controllers\Api\AccountDetailController;
 use App\Http\Controllers\Api\ActiveAliasController;
 use App\Http\Controllers\Api\ActiveDomainController;
+use App\Http\Controllers\Api\ActiveRecipientController;
 use App\Http\Controllers\Api\ActiveRuleController;
 use App\Http\Controllers\Api\ActiveUsernameController;
 use App\Http\Controllers\Api\AliasBulkController;
 use App\Http\Controllers\Api\AliasController;
+use App\Http\Controllers\Api\AliasLabelController;
 use App\Http\Controllers\Api\AliasRecipientController;
 use App\Http\Controllers\Api\AllowedRecipientController;
 use App\Http\Controllers\Api\ApiTokenDetailController;
@@ -19,10 +21,12 @@ use App\Http\Controllers\Api\ChartDataController;
 use App\Http\Controllers\Api\DomainController;
 use App\Http\Controllers\Api\DomainDefaultRecipientController;
 use App\Http\Controllers\Api\DomainOptionController;
+use App\Http\Controllers\Api\DomainVerificationController;
 use App\Http\Controllers\Api\DownloadableFailedDeliveryController;
 use App\Http\Controllers\Api\EncryptedRecipientController;
 use App\Http\Controllers\Api\FailedDeliveryController;
 use App\Http\Controllers\Api\InlineEncryptedRecipientController;
+use App\Http\Controllers\Api\LabelController;
 use App\Http\Controllers\Api\LoginableUsernameController;
 use App\Http\Controllers\Api\PinnedAliasController;
 use App\Http\Controllers\Api\ProtectedHeadersRecipientController;
@@ -88,6 +92,7 @@ Route::group([
         Route::post('/aliases/restore/bulk', 'restore');
         Route::post('/aliases/forget/bulk', 'forget');
         Route::post('/aliases/recipients/bulk', 'recipients');
+        Route::post('/aliases/labels/bulk', 'labels');
     });
 
     Route::controller(ActiveAliasController::class)->group(function () {
@@ -106,6 +111,16 @@ Route::group([
     });
 
     Route::post('/alias-recipients', [AliasRecipientController::class, 'store']);
+
+    Route::post('/alias-labels', [AliasLabelController::class, 'store']);
+
+    Route::controller(LabelController::class)->group(function () {
+        Route::get('/labels', 'index');
+        Route::get('/labels/{id}', 'show');
+        Route::post('/labels', 'store');
+        Route::patch('/labels/{id}', 'update');
+        Route::delete('/labels/{id}', 'destroy');
+    });
 
     Route::controller(RecipientController::class)->group(function () {
         Route::get('/recipients', 'index');
@@ -151,6 +166,11 @@ Route::group([
         Route::delete('/allowed-recipients/{id}', 'destroy');
     });
 
+    Route::controller(ActiveRecipientController::class)->group(function () {
+        Route::post('/active-recipients', 'store');
+        Route::delete('/active-recipients/{id}', 'destroy');
+    });
+
     Route::controller(DomainController::class)->group(function () {
         Route::get('/domains', 'index');
         Route::get('/domains/{id}', 'show');
@@ -160,6 +180,7 @@ Route::group([
     });
 
     Route::patch('/domains/{id}/default-recipient', [DomainDefaultRecipientController::class, 'update']);
+    Route::post('/domains/{id}/check-sending', [DomainVerificationController::class, 'checkSending']);
 
     Route::controller(ActiveDomainController::class)->group(function () {
         Route::post('/active-domains', 'store');

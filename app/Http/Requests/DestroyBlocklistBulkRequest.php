@@ -2,12 +2,14 @@
 
 namespace App\Http\Requests;
 
+use App\Http\Requests\Concerns\NormalizesBulkIds;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Support\Arr;
 
 class DestroyBlocklistBulkRequest extends FormRequest
 {
+    use NormalizesBulkIds;
+
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -22,7 +24,7 @@ class DestroyBlocklistBulkRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         $this->merge([
-            'ids' => Arr::whereNotNull($this->ids ?? []),
+            'ids' => $this->normalizedBulkIds($this->ids),
         ]);
     }
 

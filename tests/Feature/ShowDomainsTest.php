@@ -70,19 +70,4 @@ class ShowDomainsTest extends TestCase
         $this->assertTrue($response->data('page')['props']['initialRows'][1]['id'] === $c->id);
         $this->assertTrue($response->data('page')['props']['initialRows'][2]['id'] === $a->id);
     }
-
-    #[Test]
-    public function user_can_verify_domain_sending_records()
-    {
-        $domain = Domain::factory()->create([
-            'user_id' => $this->user->id,
-            'domain' => 'example.com',
-        ]);
-
-        $response = $this->get('/domains/'.$domain->id.'/check-sending');
-
-        $response->assertStatus(200);
-
-        $this->assertEquals('Records verified for sending.', $response->json('message'));
-    }
 }

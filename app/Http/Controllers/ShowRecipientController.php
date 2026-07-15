@@ -24,6 +24,7 @@ class ShowRecipientController extends Controller
                 'description',
                 'should_encrypt',
                 'fingerprint',
+                'active',
                 'email_verified_at',
                 'created_at',
             ])
@@ -84,7 +85,7 @@ class ShowRecipientController extends Controller
         $recipient = user()->recipients()->findOrFail($id);
 
         return Inertia::render('Recipients/Edit', [
-            'initialRecipient' => $recipient->only(['id', 'user_id', 'email', 'description', 'can_reply_send', 'fingerprint', 'protected_headers', 'inline_encryption', 'remove_pgp_keys', 'remove_pgp_signatures', 'email_verified_at', 'updated_at']),
+            'initialRecipient' => $recipient->only(['id', 'user_id', 'email', 'description', 'can_reply_send', 'fingerprint', 'protected_headers', 'inline_encryption', 'remove_pgp_keys', 'remove_pgp_signatures', 'active', 'email_verified_at', 'updated_at']),
         ]);
     }
 }

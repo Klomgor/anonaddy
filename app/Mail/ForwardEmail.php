@@ -354,10 +354,14 @@ class ForwardEmail extends Mailable implements ShouldBeEncrypted, ShouldQueue
                 if ($this->receivedHeaders) {
                     if (is_array($this->receivedHeaders)) {
                         foreach ($this->receivedHeaders as $receivedHeader) {
+                            if (! is_string($receivedHeader)) {
+                                continue;
+                            }
+
                             $message->getHeaders()
                                 ->addTextHeader('Received', $receivedHeader);
                         }
-                    } else {
+                    } elseif (is_string($this->receivedHeaders)) {
                         $message->getHeaders()
                             ->addTextHeader('Received', $this->receivedHeaders);
                     }
@@ -368,11 +372,16 @@ class ForwardEmail extends Mailable implements ShouldBeEncrypted, ShouldQueue
                         ->addTextHeader('X-AnonAddy-Authentication-Results', $this->authenticationResults);
                 }
 
-                $message->getHeaders()
-                    ->addTextHeader('X-AnonAddy-Original-Sender', $this->sender);
+                // Envelope/From can be missing (e.g. MAIL FROM:<> or failed-delivery resend with null sender)
+                if (is_string($this->sender)) {
+                    $message->getHeaders()
+                        ->addTextHeader('X-AnonAddy-Original-Sender', $this->sender);
+                }
 
-                $message->getHeaders()
-                    ->addTextHeader('X-AnonAddy-Original-Envelope-From', $this->originalEnvelopeFrom);
+                if (is_string($this->originalEnvelopeFrom)) {
+                    $message->getHeaders()
+                        ->addTextHeader('X-AnonAddy-Original-Envelope-From', $this->originalEnvelopeFrom);
+                }
 
                 if ($this->originalFromHeader) {
                     $message->getHeaders()

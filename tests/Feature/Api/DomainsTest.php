@@ -354,4 +354,38 @@ class DomainsTest extends TestCase
 
         $this->assertNull($domain->refresh()->defaultRecipient);
     }
+
+    #[Test]
+    public function user_can_verify_domain_sending_records()
+    {
+        $domain = Domain::factory()->create([
+            'user_id' => $this->user->id,
+            'domain' => 'daretogain.com',
+        ]);
+
+        $response = $this->json('POST', '/api/v1/domains/'.$domain->id.'/check-sending');
+
+        $response->assertSuccessful();
+        $response->assertJson([
+            'success' => true,
+            'message' => 'Records manually verified for sending.',
+        ]);
+
+        $this->assertDatabaseHas('domains', [
+            'user_id' => $this->user->id,
+            'domain' => 'daretogain.com',
+        ]);
+        $this->assertNotNull($domain->refresh()->domain_sending_verified_at);
+    }
+
+    #[Test]
+    public function user_cannot_verify_another_users_domain_sending_records()
+    {
+        $domain = Domain::factory()->create();
+
+        $response = $this->json('POST', '/api/v1/domains/'.$domain->id.'/check-sending');
+
+        $response->assertNotFound();
+        $this->assertNull($domain->refresh()->domain_sending_verified_at);
+    }
 }

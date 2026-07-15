@@ -20,6 +20,7 @@ class RecipientResource extends JsonResource
             'remove_pgp_keys' => $this->remove_pgp_keys,
             'remove_pgp_signatures' => $this->remove_pgp_signatures,
             'fingerprint' => $this->fingerprint,
+            'active' => $this->active,
             'email_verified_at' => $this->email_verified_at?->toDateTimeString(),
             'aliases' => [],
             'aliases_count' => $this->whenCounted('aliases_count'),

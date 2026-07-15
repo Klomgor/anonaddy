@@ -20,7 +20,6 @@ use App\Http\Controllers\DefaultRecipientController;
 use App\Http\Controllers\DefaultUsernameController;
 use App\Http\Controllers\DeleteAliasController;
 use App\Http\Controllers\DisplayFromFormatController;
-use App\Http\Controllers\DomainVerificationController;
 use App\Http\Controllers\EmailSubjectController;
 use App\Http\Controllers\FailedDeliveryNotificationPreferenceController;
 use App\Http\Controllers\FromNameController;
@@ -125,7 +124,6 @@ Route::middleware(['auth', 'verified', '2fa'])->group(function () {
         Route::get('/domains', 'index')->name('domains.index');
         Route::get('/domains/{id}/edit', 'edit')->name('domains.edit');
     });
-    Route::get('/domains/{id}/check-sending', [DomainVerificationController::class, 'checkSending']);
 
     Route::controller(ShowUsernameController::class)->group(function () {
         Route::get('/usernames', 'index')->name('usernames.index');

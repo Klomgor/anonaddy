@@ -27,6 +27,7 @@ class AliasResource extends JsonResource
             'emails_replied' => $this->emails_replied,
             'emails_sent' => $this->emails_sent,
             'recipients' => RecipientResource::collection($this->whenLoaded('recipients')),
+            'labels' => LabelResource::collection($this->whenLoaded('labels')),
             'last_forwarded' => $this->last_forwarded?->toDateTimeString(),
             'last_blocked' => $this->last_blocked?->toDateTimeString(),
             'last_replied' => $this->last_replied?->toDateTimeString(),

@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Label;
+use App\Rules\UserLabelId;
 use App\Rules\ValidAliasLocalPart;
 use App\Rules\VerifiedRecipientId;
 use Illuminate\Foundation\Http\FormRequest;
@@ -53,6 +55,14 @@ class StoreAliasRequest extends FormRequest
                 'max:10',
                 new VerifiedRecipientId,
             ],
+            'label_ids' => [
+                'bail',
+                'nullable',
+                'array',
+                'max:'.Label::LABELS_PER_ALIAS_LIMIT,
+                new UserLabelId,
+            ],
+            'label_ids.*' => 'required|uuid|distinct',
         ];
     }
 
